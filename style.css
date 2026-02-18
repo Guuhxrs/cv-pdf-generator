@@ -1,0 +1,270 @@
+* { box-sizing: border-box; }
+
+:root{
+  --bg: #0b1220;
+  --card: rgba(255,255,255,.06);
+  --border: rgba(255,255,255,.12);
+  --text: #e5e7eb;
+  --muted: rgba(229,231,235,.75);
+  --primary: #4c7dff;
+  --danger: #ff4d4d;
+
+  --paperBg: #ffffff;
+  --paperText: #0f172a;
+  --paperMuted: #475569;
+  --paperLine: #e2e8f0;
+}
+
+body{
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background:
+    radial-gradient(1200px 600px at 10% 10%, #1b2a52 0%, transparent 60%),
+    radial-gradient(1000px 500px at 90% 20%, #1f3a8a 0%, transparent 55%),
+    var(--bg);
+  color: var(--text);
+}
+
+.container{ max-width: 1100px; margin: 0 auto; padding: 16px; }
+
+.top{
+  display:flex;
+  justify-content: space-between;
+  align-items:flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.top h1{ margin: 6px 0; font-size: 22px; }
+.top p{ margin: 0; color: var(--muted); }
+
+.actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+@media (min-width: 900px){
+  .grid{ grid-template-columns: 1fr 1fr; }
+}
+
+.card{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 26px rgba(0,0,0,.25);
+}
+
+h2{ margin: 6px 0 12px; font-size: 16px; }
+
+label{
+  display:block;
+  margin: 10px 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+input, textarea{
+  width:100%;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(148,163,184,.28);
+  background: rgba(15,23,42,.55);
+  color: var(--text);
+  outline:none;
+}
+
+input:invalid, textarea:invalid{
+  /* não fica vermelho o tempo todo, mas ajuda a visualizar quando o browser aplica */
+  border-color: rgba(255,77,77,.35);
+}
+
+.row2{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+@media (min-width: 520px){
+  .row2{ grid-template-columns: 1fr 1fr; }
+}
+
+button{
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-weight: 800;
+  color: #071022;
+}
+
+button.primary{ background: var(--primary); }
+
+button.danger{
+  background: rgba(255,77,77,.16);
+  color: #ffd3d3;
+  border: 1px solid rgba(255,77,77,.35);
+}
+
+button:not(.primary):not(.danger){
+  background: rgba(255,255,255,.08);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.row{
+  display:flex;
+  justify-content: space-between;
+  align-items:center;
+  gap: 10px;
+}
+
+.status{
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.hint{
+  display:block;
+  margin-top: 10px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+/* --------- "PAPER" (PDF) --------- */
+.paper{
+  background: var(--paperBg);
+  color: var(--paperText);
+  border-radius: 14px;
+  padding: 18px;
+  border: 1px solid var(--paperLine);
+}
+
+.paper-header{
+  display:flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.paper-title h3{
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: .2px;
+}
+
+.paper-contact{
+  text-align: right;
+  font-size: 12px;
+  color: var(--paperMuted);
+  line-height: 1.35;
+}
+.paper-contact a{
+  color: inherit;
+  text-decoration: none;
+}
+
+.divider{
+  margin: 12px 0;
+  height: 1px;
+  background: var(--paperLine);
+}
+
+.paper-body .block{ margin-bottom: 12px; }
+
+.paper-body h4{
+  margin: 0 0 6px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  color: var(--paperMuted);
+}
+
+.text{
+  margin: 0;
+  line-height: 1.45;
+  color: var(--paperText);
+}
+
+.two{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 700px){
+  .two{ grid-template-columns: 1fr 1fr; }
+}
+
+.bullets{
+  margin: 0;
+  padding-left: 18px;
+  color: var(--paperMuted);
+  line-height: 1.5;
+  font-size: 13px;
+}
+
+/* bloco de formação */
+.edu{
+  border: 1px solid var(--paperLine);
+  border-radius: 12px;
+  padding: 12px;
+  background: #fbfdff;
+}
+.edu-head{
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+.edu-period{
+  color: var(--paperMuted);
+  font-size: 12px;
+}
+.edu-course{
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--paperText);
+  font-weight: 600;
+}
+.edu-desc{
+  margin: 6px 0 0;
+  color: var(--paperMuted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.paper-footer{
+  margin-top: 10px;
+  color: var(--paperMuted);
+  font-size: 11px;
+  text-align: center;
+}
+
+/* --------- PRINT --------- */
+.print-only{ display:none; }
+
+@media print{
+  body{ background: #fff !important; }
+  .no-print{ display:none !important; }
+  .print-only{ display:block !important; }
+
+  .paper{
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 22px !important;
+  }
+}

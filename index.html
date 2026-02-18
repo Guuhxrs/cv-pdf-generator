@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gerador de Currículo em PDF</title>
+  <meta name="description" content="Gere um currículo em PDF direto do navegador." />
+
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 img-src 'self' data:;
+                 style-src 'self';
+                 script-src 'self';
+                 object-src 'none';
+                 base-uri 'none';
+                 frame-ancestors 'none'">
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <main class="app container no-print">
+    <header class="top">
+      <div>
+        <h1>Gerador de Currículo em PDF</h1>
+        <p>Preencha os campos e gere um <strong>PDF profissional</strong>.</p>
+        <p class="hint">
+          <strong>Atenção:</strong> os dados podem ser salvos automaticamente <em>neste dispositivo</em>.
+          Use <strong>Limpar dados</strong> se estiver em um celular/computador compartilhado.
+        </p>
+      </div>
+
+      <div class="actions">
+        <button id="btnPreview" type="button">Atualizar prévia</button>
+        <button id="btnPdf" type="button" class="primary">Gerar PDF</button>
+        <button id="btnClear" type="button" class="danger">Limpar dados</button>
+      </div>
+    </header>
+
+    <section class="grid">
+      <!-- FORMULÁRIO -->
+      <div class="card">
+        <h2>Informações</h2>
+
+        <label>Nome completo
+          <input
+            id="name"
+            placeholder="Ex: Nome Sobrenome"
+            autocomplete="name"
+            inputmode="text"
+            maxlength="60"
+            pattern="^[A-Za-zÀ-ÖØ-öø-ÿ\s'.-]{2,60}$"
+            title="Use apenas letras e espaços (2 a 60 caracteres)."
+          />
+        </label>
+
+        <div class="row2">
+          <label>Telefone (opcional)
+            <input
+              id="phone"
+              placeholder="Ex: (00) 90000-0000"
+              inputmode="tel"
+              maxlength="20"
+              pattern="^[0-9()\s+-]{8,20}$"
+              title="Use apenas números e símbolos de telefone: ( ) + - e espaços."
+            />
+          </label>
+
+          <label>Email (opcional)
+            <input
+              id="email"
+              placeholder="Ex: email@exemplo.com"
+              inputmode="email"
+              maxlength="80"
+              pattern="^[^\s@]+@[^\s@]+\.[^\s@]{2,}$"
+              title="Digite um e-mail válido."
+            />
+          </label>
+        </div>
+
+        <div class="row2">
+          <label>GitHub (opcional)
+            <input
+              id="github"
+              placeholder="Ex: github.com/usuario"
+              inputmode="url"
+              maxlength="120"
+              pattern="^(https?:\/\/)?(www\.)?github\.com\/[A-Za-z0-9-]{1,39}\/?$"
+              title="Use um link/usuário do GitHub válido. Ex: github.com/usuario"
+            />
+          </label>
+
+          <label>LinkedIn (opcional)
+            <input
+              id="linkedin"
+              placeholder="Ex: linkedin.com/in/usuario"
+              inputmode="url"
+              maxlength="140"
+              pattern="^(https?:\/\/)?(www\.)?linkedin\.com\/in\/[A-Za-z0-9-_%]+\/?$"
+              title="Use um link do LinkedIn válido. Ex: linkedin.com/in/seu-perfil"
+            />
+          </label>
+        </div>
+
+        <label>OBJETIVOS
+          <textarea
+            id="objective"
+            rows="5"
+            maxlength="800"
+            placeholder="Ex: Atuar na área de Banco de Dados ou Back-end..."
+          ></textarea>
+        </label>
+
+        <label>COMPETÊNCIAS (1 por linha)
+          <textarea
+            id="skills"
+            rows="7"
+            maxlength="600"
+            placeholder="Python&#10;SQL&#10;MySQL&#10;Git&#10;Modelagem de dados"
+          ></textarea>
+        </label>
+
+        <label>FORMAÇÃO — Instituição
+          <input
+            id="eduInstitution"
+            placeholder="Ex: Instituição"
+            maxlength="80"
+            pattern="^[A-Za-zÀ-ÖØ-öø-ÿ0-9\s'.-]{2,80}$"
+            title="Use letras, números, espaços e . ' -"
+          />
+        </label>
+
+        <label>FORMAÇÃO — Curso
+          <input
+            id="eduCourse"
+            placeholder="Ex: Técnico em Informática"
+            maxlength="80"
+            pattern="^[A-Za-zÀ-ÖØ-öø-ÿ0-9\s'.-]{2,80}$"
+            title="Use letras, números, espaços e . ' -"
+          />
+        </label>
+
+        <label>FORMAÇÃO — Período
+          <input
+            id="eduPeriod"
+            placeholder="Ex: 2023 - 2026"
+            maxlength="25"
+            pattern="^[0-9\s\-–/]{4,25}$"
+            title="Use apenas números, espaços, -, –, /"
+          />
+        </label>
+
+        <label>FORMAÇÃO — Descrição
+          <textarea
+            id="eduDescription"
+            rows="5"
+            maxlength="800"
+            placeholder="Descreva brevemente a formação..."
+          ></textarea>
+        </label>
+
+        <label>CERTIFICADOS E LICENÇAS (1 por linha)
+          <textarea
+            id="certs"
+            rows="4"
+            maxlength="600"
+            placeholder="Curso — Plataforma/Instituição&#10;Certificação — Emissor"
+          ></textarea>
+        </label>
+
+        <label>IDIOMAS (1 por linha: Idioma - Nível)
+          <textarea
+            id="languages"
+            rows="3"
+            maxlength="200"
+            placeholder="Português - Nativo&#10;Inglês - Básico"
+          ></textarea>
+        </label>
+      </div>
+
+      <!-- PRÉVIA -->
+      <div class="card">
+        <div class="row">
+          <h2>Prévia do PDF</h2>
+          <span id="status" class="status">Pronto ✅</span>
+        </div>
+
+        <section id="pdfArea" class="paper" aria-label="Prévia do documento">
+          <div class="paper-header">
+            <div class="paper-title">
+              <h3 id="pName">Nome do usuário</h3>
+            </div>
+            <div class="paper-contact" id="pContact"></div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="paper-body">
+            <div class="block">
+              <h4>OBJETIVOS</h4>
+              <p id="pObjective" class="text">Preencha seus objetivos para aparecer aqui.</p>
+            </div>
+
+            <div class="block">
+              <h4>COMPETÊNCIAS</h4>
+              <ul id="pSkills" class="bullets"></ul>
+            </div>
+
+            <div class="block">
+              <h4>FORMAÇÃO</h4>
+              <div class="edu">
+                <div class="edu-head">
+                  <strong id="pEduInstitution">Instituição</strong>
+                  <span id="pEduPeriod" class="edu-period">Período</span>
+                </div>
+                <div id="pEduCourse" class="edu-course">Curso</div>
+                <p id="pEduDescription" class="edu-desc">Descrição da formação.</p>
+              </div>
+            </div>
+
+            <div class="two">
+              <div class="block">
+                <h4>CERTIFICADOS E LICENÇAS</h4>
+                <ul id="pCerts" class="bullets"></ul>
+              </div>
+
+              <div class="block">
+                <h4>IDIOMAS</h4>
+                <ul id="pLanguages" class="bullets"></ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="paper-footer">
+            <small>Documento gerado no navegador • Exportação via impressão (Salvar como PDF)</small>
+          </div>
+        </section>
+
+        <small class="hint">
+          Ao clicar em <strong>Gerar PDF</strong>, o navegador abrirá a tela de impressão.
+          Selecione <strong>Salvar como PDF</strong>.
+        </small>
+      </div>
+    </section>
+  </main>
+
+  <section class="print-only">
+    <section id="pdfAreaPrint" class="paper" aria-label="Documento para impressão"></section>
+  </section>
+
+  <script src="script.js"></script>
+</body>
+</html>
