@@ -16,6 +16,7 @@
                  frame-ancestors 'none'">
 
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="template-enhancements.css" />
 </head>
 
 <body>
@@ -112,7 +113,7 @@
           </label>
         </div>
 
-        <label>OBJETIVOS
+        <label><span id="labelObjective">OBJETIVOS</span>
           <textarea
             id="objective"
             rows="5"
@@ -121,12 +122,30 @@
           ></textarea>
         </label>
 
-        <label>COMPETÊNCIAS (1 por linha)
+        <label><span id="labelSkills">COMPETÊNCIAS (1 por linha)</span>
           <textarea
             id="skills"
             rows="7"
             maxlength="600"
             placeholder="Python&#10;SQL&#10;MySQL&#10;Git&#10;Modelagem de dados"
+          ></textarea>
+        </label>
+
+        <label><span id="labelExperience">EXPERIÊNCIA / DESTAQUES</span>
+          <textarea
+            id="experience"
+            rows="5"
+            maxlength="900"
+            placeholder="Descreva resultados, entregas e experiências principais..."
+          ></textarea>
+        </label>
+
+        <label><span id="labelProjects">PROJETOS (1 por linha)</span>
+          <textarea
+            id="projects"
+            rows="4"
+            maxlength="700"
+            placeholder="Projeto A — breve descrição&#10;Projeto B — breve descrição"
           ></textarea>
         </label>
 
@@ -186,6 +205,15 @@
             placeholder="Português - Nativo&#10;Inglês - Básico"
           ></textarea>
         </label>
+
+        <label>Portfólio/Website (opcional)
+          <input
+            id="portfolio"
+            placeholder="Ex: meuportfolio.dev"
+            inputmode="url"
+            maxlength="140"
+          />
+        </label>
       </div>
 
       <!-- PRÉVIA -->
@@ -206,18 +234,18 @@
           <div class="divider"></div>
 
           <div class="paper-body">
-            <div class="block">
-              <h4>OBJETIVOS</h4>
+            <div class="block" id="blockObjective">
+              <h4 id="hObjective">OBJETIVOS</h4>
               <p id="pObjective" class="text">Preencha seus objetivos para aparecer aqui.</p>
             </div>
 
-            <div class="block">
-              <h4>COMPETÊNCIAS</h4>
+            <div class="block" id="blockSkills">
+              <h4 id="hSkills">COMPETÊNCIAS</h4>
               <ul id="pSkills" class="bullets"></ul>
             </div>
 
-            <div class="block">
-              <h4>FORMAÇÃO</h4>
+            <div class="block" id="blockEducation">
+              <h4 id="hEducation">FORMAÇÃO</h4>
               <div class="edu">
                 <div class="edu-head">
                   <strong id="pEduInstitution">Instituição</strong>
@@ -229,14 +257,26 @@
             </div>
 
             <div class="two">
-              <div class="block">
-                <h4>CERTIFICADOS E LICENÇAS</h4>
+              <div class="block" id="blockCerts">
+                <h4 id="hCerts">CERTIFICADOS E LICENÇAS</h4>
                 <ul id="pCerts" class="bullets"></ul>
               </div>
 
-              <div class="block">
-                <h4>IDIOMAS</h4>
+              <div class="block" id="blockLanguages">
+                <h4 id="hLanguages">IDIOMAS</h4>
                 <ul id="pLanguages" class="bullets"></ul>
+              </div>
+            </div>
+
+            <div class="two" id="templateExtraSections">
+              <div class="block" id="blockExperience">
+                <h4 id="hExperience">EXPERIÊNCIA</h4>
+                <p id="pExperience" class="text">Adicione sua experiência principal.</p>
+              </div>
+
+              <div class="block" id="blockProjects">
+                <h4 id="hProjects">PROJETOS</h4>
+                <ul id="pProjects" class="bullets"></ul>
               </div>
             </div>
           </div>
@@ -259,5 +299,6 @@
   </section>
 
   <script src="script.js"></script>
+  <script src="template-enhancements.js"></script>
 </body>
 </html>
