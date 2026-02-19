@@ -11,7 +11,7 @@
 
 const FIELD_IDS = Object.freeze([
   "template", "name", "phone", "email", "github", "linkedin",
-  "objective", "skills", "experience", "projects", "portfolio",
+  "objective", "skills",
   "eduInstitution", "eduCourse", "eduPeriod", "eduDescription",
   "certs", "languages"
 ]);
@@ -38,58 +38,13 @@ const ui = Object.freeze({
     contact: getEl("pContact"),
     objective: getEl("pObjective"),
     skills: getEl("pSkills"),
-    experience: getEl("pExperience"),
-    projects: getEl("pProjects"),
     eduInstitution: getEl("pEduInstitution"),
     eduCourse: getEl("pEduCourse"),
     eduPeriod: getEl("pEduPeriod"),
     eduDescription: getEl("pEduDescription"),
     certs: getEl("pCerts"),
-    languages: getEl("pLanguages"),
-    blockObjective: getEl("blockObjective"),
-    blockSkills: getEl("blockSkills"),
-    blockEducation: getEl("blockEducation"),
-    blockCerts: getEl("blockCerts"),
-    blockLanguages: getEl("blockLanguages"),
-    blockExperience: getEl("blockExperience"),
-    blockProjects: getEl("blockProjects"),
-    hObjective: getEl("hObjective"),
-    hSkills: getEl("hSkills"),
-    hEducation: getEl("hEducation"),
-    hCerts: getEl("hCerts"),
-    hLanguages: getEl("hLanguages"),
-    hExperience: getEl("hExperience"),
-    hProjects: getEl("hProjects")
+    languages: getEl("pLanguages")
   })
-});
-
-
-const TEMPLATE_CONFIG = Object.freeze({
-  classic: {
-    labels: { objective: "OBJETIVOS", skills: "COMPETÊNCIAS (1 por linha)", experience: "EXPERIÊNCIA / DESTAQUES", projects: "PROJETOS (1 por linha)" },
-    headings: { objective: "OBJETIVOS", skills: "COMPETÊNCIAS", education: "FORMAÇÃO", certs: "CERTIFICADOS E LICENÇAS", languages: "IDIOMAS", experience: "EXPERIÊNCIA", projects: "PROJETOS" },
-    show: ["objective","skills","education","certs","languages","experience","projects"]
-  },
-  modern: {
-    labels: { objective: "RESUMO PROFISSIONAL", skills: "STACK / TECNOLOGIAS", experience: "IMPACTO PROFISSIONAL", projects: "CASOS / PROJETOS" },
-    headings: { objective: "RESUMO PROFISSIONAL", skills: "STACK", education: "FORMAÇÃO", certs: "CERTIFICAÇÕES", languages: "IDIOMAS", experience: "IMPACTO", projects: "CASOS" },
-    show: ["objective","skills","education","experience","projects","certs"]
-  },
-  minimal: {
-    labels: { objective: "SOBRE MIM", skills: "PONTOS FORTES", experience: "TRAJETÓRIA", projects: "TRABALHOS" },
-    headings: { objective: "SOBRE", skills: "PONTOS FORTES", education: "FORMAÇÃO", certs: "CURSOS", languages: "IDIOMAS", experience: "TRAJETÓRIA", projects: "TRABALHOS" },
-    show: ["objective","skills","education","experience"]
-  },
-  corporate: {
-    labels: { objective: "RESUMO EXECUTIVO", skills: "COMPETÊNCIAS ESTRATÉGICAS", experience: "RESULTADOS E LIDERANÇA", projects: "INICIATIVAS RELEVANTES" },
-    headings: { objective: "RESUMO EXECUTIVO", skills: "COMPETÊNCIAS-CHAVE", education: "FORMAÇÃO ACADÊMICA", certs: "CERTIFICAÇÕES", languages: "IDIOMAS", experience: "RESULTADOS E LIDERANÇA", projects: "INICIATIVAS" },
-    show: ["objective","skills","education","certs","languages","experience"]
-  },
-  creative: {
-    labels: { objective: "MANIFESTO CRIATIVO", skills: "FERRAMENTAS E LINGUAGENS", experience: "EXPERIÊNCIAS CRIATIVAS", projects: "PORTFÓLIO (1 por linha)" },
-    headings: { objective: "MANIFESTO", skills: "FERRAMENTAS", education: "FORMAÇÃO", certs: "PRÊMIOS / CURSOS", languages: "IDIOMAS", experience: "EXPERIÊNCIAS", projects: "PORTFÓLIO" },
-    show: ["objective","skills","projects","experience","languages"]
-  }
 });
 
 const validators = Object.freeze({
@@ -114,10 +69,6 @@ const validators = Object.freeze({
     allowRegex: /[^\w:\/\.\-%]/g,
     validate: (v) => v === "" || /^(https?:\/\/)?(www\.)?linkedin\.com\/in\/[A-Za-z0-9-_%]+\/?$/.test(v)
   },
-  portfolio: {
-    allowRegex: /[^\w:\/\.\-%]/g,
-    validate: (v) => v === "" || /^(https?:\/\/)?[A-Za-z0-9.-]+\.[A-Za-z]{2,}(\/.*)?$/.test(v)
-  },
   eduInstitution: {
     allowRegex: /[^A-Za-zÀ-ÖØ-öø-ÿ0-9\s'.-]/g,
     validate: (v) => v === "" || /^[A-Za-zÀ-ÖØ-öø-ÿ0-9\s'.-]{2,80}$/.test(v)
@@ -140,7 +91,6 @@ function init() {
   attachInputGuards();
   renderPreview();
   applyTemplateFromSelection();
-  updateFormLabelsByTemplate(ui.inputs.template.value || DEFAULT_TEMPLATE);
   setStatus("Pronto ✅");
 }
 
@@ -169,7 +119,6 @@ function attachInputGuards() {
   guardInput("email");
   guardInput("github");
   guardInput("linkedin");
-  guardInput("portfolio");
   guardInput("eduInstitution");
   guardInput("eduCourse");
   guardInput("eduPeriod");
@@ -228,8 +177,6 @@ function renderPreview() {
 
   renderBullets(ui.out.certs, splitLines(data.certs), "Adicione certificados/cursos para aparecerem aqui.");
   renderBullets(ui.out.languages, splitLines(data.languages), "Adicione idiomas para aparecerem aqui.");
-  setText(ui.out.experience, data.experience || "Adicione sua experiência principal.");
-  renderBullets(ui.out.projects, splitLines(data.projects), "Adicione projetos para aparecerem aqui.");
 }
 
 function generatePdf() {
@@ -256,8 +203,6 @@ function applyTemplateFromSelection() {
 
   ui.pdfArea.dataset.template = safeTemplate;
   ui.printArea.dataset.template = safeTemplate;
-  updateTemplateView(safeTemplate);
-  updateFormLabelsByTemplate(safeTemplate);
 }
 
 function clearAll() {
@@ -290,7 +235,6 @@ function collectValidationIssues(data) {
   if (!validators.email.validate(data.email || "")) issues.push("email");
   if (!validators.github.validate(data.github || "")) issues.push("github");
   if (!validators.linkedin.validate(data.linkedin || "")) issues.push("linkedin");
-  if (!validators.portfolio.validate(data.portfolio || "")) issues.push("portfolio");
   if (!validators.eduInstitution.validate(data.eduInstitution || "")) issues.push("eduInstitution");
   if (!validators.eduCourse.validate(data.eduCourse || "")) issues.push("eduCourse");
   if (!validators.eduPeriod.validate(data.eduPeriod || "")) issues.push("eduPeriod");
@@ -331,10 +275,6 @@ function renderContact(container, data) {
 
   if (data.email) lines.push(`E-mail: ${data.email}`);
   if (data.phone) lines.push(`Telefone: ${data.phone}`);
-  if (data.portfolio) {
-    const url = normalizeUrl(data.portfolio);
-    lines.push(url ? { label: `Portfólio: ${data.portfolio}`, url } : `Portfólio: ${data.portfolio}`);
-  }
 
   for (const item of lines) {
     const div = document.createElement("div");
@@ -483,51 +423,4 @@ function syncPrintArea() {
   clone.dataset.template = ui.pdfArea.dataset.template || DEFAULT_TEMPLATE;
   clone.removeAttribute("id");
   ui.printArea.appendChild(clone);
-}
-
-
-function updateFormLabelsByTemplate(template) {
-  const config = TEMPLATE_CONFIG[template] || TEMPLATE_CONFIG[DEFAULT_TEMPLATE];
-  const map = {
-    labelObjective: config.labels.objective,
-    labelSkills: config.labels.skills,
-    labelExperience: config.labels.experience,
-    labelProjects: config.labels.projects
-  };
-
-  for (const [id, text] of Object.entries(map)) {
-    const el = getEl(id);
-    el.textContent = text;
-  }
-}
-
-function updateTemplateView(template) {
-  const config = TEMPLATE_CONFIG[template] || TEMPLATE_CONFIG[DEFAULT_TEMPLATE];
-  const blocks = {
-    objective: ui.out.blockObjective,
-    skills: ui.out.blockSkills,
-    education: ui.out.blockEducation,
-    certs: ui.out.blockCerts,
-    languages: ui.out.blockLanguages,
-    experience: ui.out.blockExperience,
-    projects: ui.out.blockProjects
-  };
-
-  const headings = {
-    objective: ui.out.hObjective,
-    skills: ui.out.hSkills,
-    education: ui.out.hEducation,
-    certs: ui.out.hCerts,
-    languages: ui.out.hLanguages,
-    experience: ui.out.hExperience,
-    projects: ui.out.hProjects
-  };
-
-  for (const [key, el] of Object.entries(blocks)) {
-    el.style.display = config.show.includes(key) ? "block" : "none";
-  }
-
-  for (const [key, el] of Object.entries(headings)) {
-    if (config.headings[key]) el.textContent = config.headings[key];
-  }
 }
