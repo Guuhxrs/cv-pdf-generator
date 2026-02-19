@@ -10,13 +10,14 @@
  */
 
 const FIELD_IDS = Object.freeze([
-  "name", "phone", "email", "github", "linkedin",
+  "template", "name", "phone", "email", "github", "linkedin",
   "objective", "skills",
   "eduInstitution", "eduCourse", "eduPeriod", "eduDescription",
   "certs", "languages"
 ]);
 
 const STORAGE_KEY_PREFIX = "cv_pdf_";
+const DEFAULT_TEMPLATE = "classic";
 
 const ui = Object.freeze({
   status: getEl("status"),
@@ -89,10 +90,12 @@ function init() {
   restoreFormFromStorage();
   attachInputGuards();
   renderPreview();
+  applyTemplateFromSelection();
   setStatus("Pronto ✅");
 }
 
 function bindEvents() {
+  ui.inputs.template.addEventListener("change", applyTemplateFromSelection);
   ui.btnPreview.addEventListener("click", renderPreview);
   ui.btnPdf.addEventListener("click", generatePdf);
   ui.btnClear.addEventListener("click", clearAll);
@@ -193,16 +196,26 @@ function generatePdf() {
   window.print();
 }
 
+function applyTemplateFromSelection() {
+  const selected = ui.inputs.template.value || DEFAULT_TEMPLATE;
+  const allowedTemplates = ["classic", "modern", "minimal", "corporate", "creative"];
+  const safeTemplate = allowedTemplates.includes(selected) ? selected : DEFAULT_TEMPLATE;
+
+  ui.pdfArea.dataset.template = safeTemplate;
+  ui.printArea.dataset.template = safeTemplate;
+}
+
 function clearAll() {
   const ok = confirm("Deseja apagar os dados salvos neste dispositivo?");
   if (!ok) return;
 
   for (const id of FIELD_IDS) {
-    ui.inputs[id].value = "";
+    ui.inputs[id].value = id === "template" ? DEFAULT_TEMPLATE : "";
     safeStorageRemove(storageKey(id));
     try { ui.inputs[id].setCustomValidity(""); } catch {}
   }
 
+  applyTemplateFromSelection();
   renderPreview();
   setStatus("Dados apagados 🧹");
 }
@@ -343,6 +356,10 @@ function restoreFormFromStorage() {
     const saved = safeStorageGet(storageKey(id));
     if (saved !== null) ui.inputs[id].value = saved;
   }
+
+  if (!ui.inputs.template.value) {
+    ui.inputs.template.value = DEFAULT_TEMPLATE;
+  }
 }
 
 function storageKey(id) {
@@ -403,6 +420,7 @@ function debounceStatus(msg, delayMs) {
 function syncPrintArea() {
   clearChildren(ui.printArea);
   const clone = ui.pdfArea.cloneNode(true);
+  clone.dataset.template = ui.pdfArea.dataset.template || DEFAULT_TEMPLATE;
   clone.removeAttribute("id");
   ui.printArea.appendChild(clone);
 }
