@@ -3,6 +3,8 @@
 (function templateEnhancements() {
   const EXTRA_FIELDS = ["experience", "projects", "portfolio"];
   const STORAGE_KEY_PREFIX = "cv_pdf_";
+  const TEMPLATE_STORAGE_KEY = `${STORAGE_KEY_PREFIX}template`;
+  const DEFAULT_TEMPLATE = "classic";
 
   const templateConfig = Object.freeze({
     classic: {
@@ -53,6 +55,8 @@
     pProjects: document.getElementById("pProjects"),
 
     pContact: document.getElementById("pContact"),
+    pdfArea: document.getElementById("pdfArea"),
+    printArea: document.getElementById("pdfAreaPrint"),
 
     blockObjective: document.getElementById("blockObjective"),
     blockSkills: document.getElementById("blockSkills"),
@@ -76,6 +80,7 @@
   init();
 
   function init() {
+    restoreTemplate();
     restoreExtraFields();
     bindEvents();
     updateEnhancements();
@@ -89,7 +94,10 @@
       });
     });
 
-    el.template.addEventListener("change", updateEnhancements);
+    el.template.addEventListener("change", () => {
+      safeStorageSet(TEMPLATE_STORAGE_KEY, readSafeTemplate());
+      updateEnhancements();
+    });
     el.btnPreview.addEventListener("click", updateEnhancements);
     el.btnPdf.addEventListener("click", updateEnhancements, true);
     el.btnClear.addEventListener("click", () => {
@@ -103,11 +111,26 @@
     const template = readSafeTemplate();
     const config = templateConfig[template] || templateConfig.classic;
 
+    applyTemplateToPreview(template);
     updateLabels(config.labels);
     updateHeadings(config.headings);
     updateVisibility(config.show);
     renderExtraContent();
     ensurePortfolioInContact();
+  }
+
+
+  function restoreTemplate() {
+    const saved = safeStorageGet(TEMPLATE_STORAGE_KEY);
+    const safe = templateConfig[saved] ? saved : DEFAULT_TEMPLATE;
+    el.template.value = safe;
+    applyTemplateToPreview(safe);
+  }
+
+  function applyTemplateToPreview(template) {
+    const safe = templateConfig[template] ? template : DEFAULT_TEMPLATE;
+    el.pdfArea.dataset.template = safe;
+    if (el.printArea) el.printArea.dataset.template = safe;
   }
 
   function updateLabels(labels) {
@@ -218,8 +241,8 @@
   }
 
   function readSafeTemplate() {
-    const allowed = ["classic", "modern", "minimal", "corporate", "creative"];
-    return allowed.includes(el.template.value) ? el.template.value : "classic";
+    const selected = (el.template.value || "").trim();
+    return templateConfig[selected] ? selected : DEFAULT_TEMPLATE;
   }
 
   function storageKey(id) {

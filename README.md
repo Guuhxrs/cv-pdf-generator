@@ -1,42 +1,25 @@
 # 📄 CV PDF Generator
 
-Gerador de currículo em PDF feito com **HTML, CSS e JavaScript puro**, com foco em simplicidade, responsividade e segurança no navegador.
+Gerador de currículo em PDF desenvolvido com **HTML, CSS e JavaScript puro**, pensado para funcionar diretamente no navegador — inclusive no celular.
+
+O projeto permite que qualquer usuário preencha seus dados e gere um **currículo profissional em PDF** de forma simples, rápida e segura.
 
 ---
 
 ## 🚀 Funcionalidades
 
-- ✨ Geração de currículo em PDF via impressão do navegador
-- 💾 Salvamento automático local com `localStorage`
+- ✨ Geração de currículo em PDF (via impressão do navegador)
+- 💾 Auto-save local (localStorage)
 - 📱 Interface responsiva (desktop e mobile)
-- 🌓 Alternância entre tema escuro e tema claro (persistido no dispositivo)
-- 🧩 **5 modelos de currículo** com diferenças visuais:
-  - Clássico
-  - Moderno
-  - Minimalista
-  - Corporativo
-  - Criativo
-- 🏷️ Seções e rótulos dinâmicos conforme modelo selecionado
-- 🧾 Campos extras para conteúdo profissional:
-  - Experiência
-  - Projetos
-  - Portfólio
-- 🔒 Validações de formulário e sanitização em runtime
-- 🛡️ Boas práticas de segurança front-end (CSP + DOM seguro)
+- 🧱 Layout profissional
+- 🔒 Validação e restrições de campos
+- 🧼 Código organizado seguindo princípios de Clean Code
+- 🛡️ Proteção básica contra XSS
+- 🌐 Validação de links (GitHub / LinkedIn)
 
 ---
 
-## 🧱 Estrutura do projeto
-
-- `index.html` → estrutura da aplicação e layout da prévia
-- `style.css` → estilos base da interface
-- `script.js` → lógica principal (formulário, preview, impressão, validações)
-- `template-enhancements.css` → estilos avançados por tipo de currículo
-- `template-enhancements.js` → comportamento dinâmico por template (labels, seções, render extra)
-
----
-
-## 🧰 Tecnologias
+## 🧰 Tecnologias Utilizadas
 
 - HTML5
 - CSS3
@@ -44,45 +27,73 @@ Gerador de currículo em PDF feito com **HTML, CSS e JavaScript puro**, com foco
 
 ---
 
-## 📋 Validações implementadas
+## 📋 Validações Implementadas
 
-- Nome com restrição de caracteres válidos
-- Telefone com máscara livre controlada por regex
-- E-mail com validação de formato
-- Links de GitHub e LinkedIn validados
-- Portfólio com normalização/validação de URL
-- Limites de caracteres por campo
-- Sanitização durante digitação
-- Validação extra em runtime antes de gerar PDF
+- Nome aceita somente letras e caracteres válidos
+- Telefone aceita apenas números e símbolos comuns
+- E-mail validado por padrão
+- Links GitHub e LinkedIn validados
+- Limite de caracteres por campo
+- Sanitização de inputs durante digitação
+- Validação extra em runtime (JavaScript)
 
 ---
 
-## 🔐 Segurança e confiabilidade
+## 🔐 Segurança e Confiabilidade
 
-- Não usa `innerHTML` com dados do usuário
-- Renderização de conteúdo com APIs seguras do DOM
-- URLs normalizadas e verificadas com `URL()`
-- Tratamento de falhas de `localStorage` com segurança
-- Content Security Policy (CSP) no HTML
+Este projeto foi desenvolvido com foco em boas práticas de segurança front-end:
+
+- ❌ Não utiliza `innerHTML` com dados do usuário
+- 🔎 URLs validadas com `URL()`
+- 🧼 Inputs sanitizados em tempo real
+- 🔒 Content Security Policy (CSP)
+- 💥 Tratamento seguro de erros no localStorage
+- 🧱 Manipulação segura do DOM
+
+---
+
+## 🤖 Uso de IA no desenvolvimento
+
+Este projeto foi desenvolvido com apoio de ferramentas de Inteligência Artificial como auxílio durante o processo de aprendizado e desenvolvimento.
+
+A IA foi utilizada para:
+
+- sugerir melhorias de estrutura e organização do código
+- revisar boas práticas e padrões de desenvolvimento
+- auxiliar na implementação de validações e segurança
+
+Toda a integração, adaptação, testes e decisões finais de implementação foram realizadas manualmente pelo autor do projeto.
 
 ---
 
 ## ▶️ Como usar
 
-1. Abra `index.html` no navegador.
-2. Preencha os dados do currículo.
-3. Selecione o modelo desejado.
-4. Clique em **Atualizar prévia** para revisar.
-5. Clique em **Gerar PDF** e escolha **Salvar como PDF**.
+1. Abra o arquivo `index.html` no navegador  
+2. Preencha os campos do currículo  
+3. Clique em **Gerar PDF**  
+4. Escolha **Salvar como PDF**
 
 ---
 
-## 🛣️ Roadmap
+## 🧠 Objetivos do Projeto
 
-- [x] Tema claro/escuro manual
-- [x] Templates diferentes de currículo
+Este projeto foi criado como prática de:
+
+- Organização de código (Clean Code)
+- Validação e controle de formulários
+- Segurança básica no Front-end
+- Manipulação segura do DOM
+- Desenvolvimento assistido por IA (AI-assisted development)
+- Geração de documentos via navegador
+
+---
+
+## 📌 Melhorias Futuras (Roadmap)
+
+- [ ] Tema claro/escuro manual
+- [ ] Templates diferentes de currículo
 - [ ] Exportação direta para PDF (sem impressão)
-- [ ] Reordenação de seções por drag-and-drop
+- [ ] Sistema de arrastar e soltar seções
 - [ ] Transformação em PWA (app instalável)
 
 ---
