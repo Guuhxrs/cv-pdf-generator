@@ -33,7 +33,6 @@
       </div>
 
       <div class="actions">
-        <button id="btnTheme" type="button" aria-label="Alternar tema">🌙 Tema escuro</button>
         <button id="btnPreview" type="button">Atualizar prévia</button>
         <button id="btnPdf" type="button" class="primary">Gerar PDF</button>
         <button id="btnClear" type="button" class="danger">Limpar dados</button>
@@ -44,16 +43,6 @@
       <!-- FORMULÁRIO -->
       <div class="card">
         <h2>Informações</h2>
-
-        <label>Modelo do currículo
-          <select id="template" aria-label="Selecionar modelo de currículo">
-            <option value="classic">Clássico</option>
-            <option value="modern">Moderno</option>
-            <option value="minimal">Minimalista</option>
-            <option value="corporate">Corporativo</option>
-            <option value="creative">Criativo</option>
-          </select>
-        </label>
 
         <label>Nome completo
           <input
@@ -115,7 +104,7 @@
           </label>
         </div>
 
-        <label><span id="labelObjective">OBJETIVOS</span>
+        <label>OBJETIVOS
           <textarea
             id="objective"
             rows="5"
@@ -124,30 +113,12 @@
           ></textarea>
         </label>
 
-        <label><span id="labelSkills">COMPETÊNCIAS (1 por linha)</span>
+        <label>COMPETÊNCIAS (1 por linha)
           <textarea
             id="skills"
             rows="7"
             maxlength="600"
             placeholder="Python&#10;SQL&#10;MySQL&#10;Git&#10;Modelagem de dados"
-          ></textarea>
-        </label>
-
-        <label><span id="labelExperience">EXPERIÊNCIA / DESTAQUES</span>
-          <textarea
-            id="experience"
-            rows="5"
-            maxlength="900"
-            placeholder="Descreva resultados, entregas e experiências principais..."
-          ></textarea>
-        </label>
-
-        <label><span id="labelProjects">PROJETOS (1 por linha)</span>
-          <textarea
-            id="projects"
-            rows="4"
-            maxlength="700"
-            placeholder="Projeto A — breve descrição&#10;Projeto B — breve descrição"
           ></textarea>
         </label>
 
@@ -207,15 +178,6 @@
             placeholder="Português - Nativo&#10;Inglês - Básico"
           ></textarea>
         </label>
-
-        <label>Portfólio/Website (opcional)
-          <input
-            id="portfolio"
-            placeholder="Ex: meuportfolio.dev"
-            inputmode="url"
-            maxlength="140"
-          />
-        </label>
       </div>
 
       <!-- PRÉVIA -->
@@ -236,18 +198,18 @@
           <div class="divider"></div>
 
           <div class="paper-body">
-            <div class="block" id="blockObjective">
-              <h4 id="hObjective">OBJETIVOS</h4>
+            <div class="block">
+              <h4>OBJETIVOS</h4>
               <p id="pObjective" class="text">Preencha seus objetivos para aparecer aqui.</p>
             </div>
 
-            <div class="block" id="blockSkills">
-              <h4 id="hSkills">COMPETÊNCIAS</h4>
+            <div class="block">
+              <h4>COMPETÊNCIAS</h4>
               <ul id="pSkills" class="bullets"></ul>
             </div>
 
-            <div class="block" id="blockEducation">
-              <h4 id="hEducation">FORMAÇÃO</h4>
+            <div class="block">
+              <h4>FORMAÇÃO</h4>
               <div class="edu">
                 <div class="edu-head">
                   <strong id="pEduInstitution">Instituição</strong>
@@ -259,26 +221,14 @@
             </div>
 
             <div class="two">
-              <div class="block" id="blockCerts">
-                <h4 id="hCerts">CERTIFICADOS E LICENÇAS</h4>
+              <div class="block">
+                <h4>CERTIFICADOS E LICENÇAS</h4>
                 <ul id="pCerts" class="bullets"></ul>
               </div>
 
-              <div class="block" id="blockLanguages">
-                <h4 id="hLanguages">IDIOMAS</h4>
+              <div class="block">
+                <h4>IDIOMAS</h4>
                 <ul id="pLanguages" class="bullets"></ul>
-              </div>
-            </div>
-
-            <div class="two" id="templateExtraSections">
-              <div class="block" id="blockExperience">
-                <h4 id="hExperience">EXPERIÊNCIA</h4>
-                <p id="pExperience" class="text">Adicione sua experiência principal.</p>
-              </div>
-
-              <div class="block" id="blockProjects">
-                <h4 id="hProjects">PROJETOS</h4>
-                <ul id="pProjects" class="bullets"></ul>
               </div>
             </div>
           </div>

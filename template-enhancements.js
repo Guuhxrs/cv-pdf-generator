@@ -1,279 +1,329 @@
 "use strict";
 
 (function templateEnhancements() {
-  const EXTRA_FIELDS = ["experience", "projects", "portfolio"];
-  const STORAGE_KEY_PREFIX = "cv_pdf_";
-  const TEMPLATE_STORAGE_KEY = `${STORAGE_KEY_PREFIX}template`;
+  const STORAGE_PREFIX = "cv_pdf_";
+  const TEMPLATE_KEY = `${STORAGE_PREFIX}template`;
+  const EXTRA_KEYS = ["experience", "projects", "portfolio"];
   const DEFAULT_TEMPLATE = "classic";
 
-  const templateConfig = Object.freeze({
+  const templates = Object.freeze({
     classic: {
-      labels: { objective: "OBJETIVOS", skills: "COMPETÊNCIAS (1 por linha)", experience: "EXPERIÊNCIA / DESTAQUES", projects: "PROJETOS (1 por linha)" },
-      headings: { objective: "OBJETIVOS", skills: "COMPETÊNCIAS", education: "FORMAÇÃO", certs: "CERTIFICADOS E LICENÇAS", languages: "IDIOMAS", experience: "EXPERIÊNCIA", projects: "PROJETOS" },
+      labelObjective: "OBJETIVOS",
+      labelSkills: "COMPETÊNCIAS (1 por linha)",
+      headingObjective: "OBJETIVOS",
+      headingSkills: "COMPETÊNCIAS",
+      headingExperience: "EXPERIÊNCIA",
+      headingProjects: "PROJETOS",
       show: ["objective", "skills", "education", "certs", "languages", "experience", "projects"]
     },
     modern: {
-      labels: { objective: "RESUMO PROFISSIONAL", skills: "STACK / TECNOLOGIAS", experience: "IMPACTO PROFISSIONAL", projects: "CASOS / PROJETOS" },
-      headings: { objective: "RESUMO PROFISSIONAL", skills: "STACK", education: "FORMAÇÃO", certs: "CERTIFICAÇÕES", languages: "IDIOMAS", experience: "IMPACTO", projects: "CASOS" },
+      labelObjective: "RESUMO PROFISSIONAL",
+      labelSkills: "STACK / TECNOLOGIAS",
+      headingObjective: "RESUMO PROFISSIONAL",
+      headingSkills: "STACK",
+      headingExperience: "IMPACTO",
+      headingProjects: "CASOS",
       show: ["objective", "skills", "education", "experience", "projects", "certs"]
     },
     minimal: {
-      labels: { objective: "SOBRE MIM", skills: "PONTOS FORTES", experience: "TRAJETÓRIA", projects: "TRABALHOS" },
-      headings: { objective: "SOBRE", skills: "PONTOS FORTES", education: "FORMAÇÃO", certs: "CURSOS", languages: "IDIOMAS", experience: "TRAJETÓRIA", projects: "TRABALHOS" },
+      labelObjective: "SOBRE MIM",
+      labelSkills: "PONTOS FORTES",
+      headingObjective: "SOBRE",
+      headingSkills: "PONTOS FORTES",
+      headingExperience: "TRAJETÓRIA",
+      headingProjects: "TRABALHOS",
       show: ["objective", "skills", "education", "experience"]
     },
     corporate: {
-      labels: { objective: "RESUMO EXECUTIVO", skills: "COMPETÊNCIAS ESTRATÉGICAS", experience: "RESULTADOS E LIDERANÇA", projects: "INICIATIVAS RELEVANTES" },
-      headings: { objective: "RESUMO EXECUTIVO", skills: "COMPETÊNCIAS-CHAVE", education: "FORMAÇÃO ACADÊMICA", certs: "CERTIFICAÇÕES", languages: "IDIOMAS", experience: "RESULTADOS E LIDERANÇA", projects: "INICIATIVAS" },
+      labelObjective: "RESUMO EXECUTIVO",
+      labelSkills: "COMPETÊNCIAS ESTRATÉGICAS",
+      headingObjective: "RESUMO EXECUTIVO",
+      headingSkills: "COMPETÊNCIAS-CHAVE",
+      headingExperience: "RESULTADOS E LIDERANÇA",
+      headingProjects: "INICIATIVAS",
       show: ["objective", "skills", "education", "certs", "languages", "experience"]
     },
     creative: {
-      labels: { objective: "MANIFESTO CRIATIVO", skills: "FERRAMENTAS E LINGUAGENS", experience: "EXPERIÊNCIAS CRIATIVAS", projects: "PORTFÓLIO (1 por linha)" },
-      headings: { objective: "MANIFESTO", skills: "FERRAMENTAS", education: "FORMAÇÃO", certs: "PRÊMIOS / CURSOS", languages: "IDIOMAS", experience: "EXPERIÊNCIAS", projects: "PORTFÓLIO" },
+      labelObjective: "MANIFESTO CRIATIVO",
+      labelSkills: "FERRAMENTAS E LINGUAGENS",
+      headingObjective: "MANIFESTO",
+      headingSkills: "FERRAMENTAS",
+      headingExperience: "EXPERIÊNCIAS",
+      headingProjects: "PORTFÓLIO",
       show: ["objective", "skills", "projects", "experience", "languages"]
     }
   });
 
-  const el = {
-    template: document.getElementById("template"),
-    btnPreview: document.getElementById("btnPreview"),
-    btnPdf: document.getElementById("btnPdf"),
-    btnClear: document.getElementById("btnClear"),
+  const formCard = document.querySelector(".grid .card");
+  const paperBody = document.querySelector("#pdfArea .paper-body");
+  const contactBox = document.getElementById("pContact");
+  const btnPreview = document.getElementById("btnPreview");
+  const btnPdf = document.getElementById("btnPdf");
+  const btnClear = document.getElementById("btnClear");
 
-    inputExperience: document.getElementById("experience"),
-    inputProjects: document.getElementById("projects"),
-    inputPortfolio: document.getElementById("portfolio"),
+  if (!formCard || !paperBody || !contactBox) return;
 
-    labelObjective: document.getElementById("labelObjective"),
-    labelSkills: document.getElementById("labelSkills"),
-    labelExperience: document.getElementById("labelExperience"),
-    labelProjects: document.getElementById("labelProjects"),
+  ensureFormFields();
+  ensurePreviewBlocks();
 
-    pObjective: document.getElementById("pObjective"),
-    pSkills: document.getElementById("pSkills"),
-    pExperience: document.getElementById("pExperience"),
-    pProjects: document.getElementById("pProjects"),
+  const refs = collectRefs();
+  if (!refs.template || !refs.objectiveLabel || !refs.blockObjective) return;
 
-    pContact: document.getElementById("pContact"),
-    pdfArea: document.getElementById("pdfArea"),
-    printArea: document.getElementById("pdfAreaPrint"),
+  restoreTemplate();
+  restoreExtraFields();
+  bindEvents();
+  updateTemplateUI();
 
-    blockObjective: document.getElementById("blockObjective"),
-    blockSkills: document.getElementById("blockSkills"),
-    blockEducation: document.getElementById("blockEducation"),
-    blockCerts: document.getElementById("blockCerts"),
-    blockLanguages: document.getElementById("blockLanguages"),
-    blockExperience: document.getElementById("blockExperience"),
-    blockProjects: document.getElementById("blockProjects"),
+  function ensureFormFields() {
+    const nameLabel = document.querySelector('label input#name')?.closest("label");
 
-    hObjective: document.getElementById("hObjective"),
-    hSkills: document.getElementById("hSkills"),
-    hEducation: document.getElementById("hEducation"),
-    hCerts: document.getElementById("hCerts"),
-    hLanguages: document.getElementById("hLanguages"),
-    hExperience: document.getElementById("hExperience"),
-    hProjects: document.getElementById("hProjects")
-  };
+    if (!document.getElementById("template") && nameLabel) {
+      const wrap = document.createElement("label");
+      wrap.innerHTML = 'Modelo do currículo<select id="template" aria-label="Selecionar modelo de currículo"><option value="classic">Clássico</option><option value="modern">Moderno</option><option value="minimal">Minimalista</option><option value="corporate">Corporativo</option><option value="creative">Criativo</option></select>';
+      formCard.insertBefore(wrap, nameLabel);
+    }
 
-  if (!el.template || !el.inputExperience || !el.blockObjective) return;
+    const skillsLabel = document.querySelector('label textarea#skills')?.closest("label");
+    if (skillsLabel && !document.getElementById("experience")) {
+      const exp = document.createElement("label");
+      exp.innerHTML = '<span id="labelExperience">EXPERIÊNCIA / DESTAQUES</span><textarea id="experience" rows="5" maxlength="900" placeholder="Descreva resultados e experiências principais..."></textarea>';
+      skillsLabel.insertAdjacentElement("afterend", exp);
+    }
+    if (skillsLabel && !document.getElementById("projects")) {
+      const proj = document.createElement("label");
+      proj.innerHTML = '<span id="labelProjects">PROJETOS (1 por linha)</span><textarea id="projects" rows="4" maxlength="700" placeholder="Projeto A — breve descrição&#10;Projeto B — breve descrição"></textarea>';
+      document.getElementById("experience")?.closest("label")?.insertAdjacentElement("afterend", proj);
+    }
+    if (!document.getElementById("portfolio")) {
+      const languagesLabel = document.querySelector('label textarea#languages')?.closest("label");
+      if (languagesLabel) {
+        const port = document.createElement("label");
+        port.innerHTML = 'Portfólio/Website (opcional)<input id="portfolio" placeholder="Ex: meuportfolio.dev" inputmode="url" maxlength="140" />';
+        languagesLabel.insertAdjacentElement("afterend", port);
+      }
+    }
 
-  init();
+    const objectiveLabel = document.querySelector('label textarea#objective')?.closest("label");
+    if (objectiveLabel && !document.getElementById("labelObjective")) {
+      const text = objectiveLabel.firstChild?.textContent?.trim() || "OBJETIVOS";
+      objectiveLabel.firstChild.textContent = "";
+      const span = document.createElement("span");
+      span.id = "labelObjective";
+      span.textContent = text;
+      objectiveLabel.prepend(span);
+    }
 
-  function init() {
-    restoreTemplate();
-    restoreExtraFields();
-    bindEvents();
-    updateEnhancements();
+    const skillsFormLabel = document.querySelector('label textarea#skills')?.closest("label");
+    if (skillsFormLabel && !document.getElementById("labelSkills")) {
+      const txt = skillsFormLabel.firstChild?.textContent?.trim() || "COMPETÊNCIAS (1 por linha)";
+      skillsFormLabel.firstChild.textContent = "";
+      const span = document.createElement("span");
+      span.id = "labelSkills";
+      span.textContent = txt;
+      skillsFormLabel.prepend(span);
+    }
+  }
+
+  function ensurePreviewBlocks() {
+    const blockObjective = paperBody.querySelector(".block");
+    if (blockObjective && !blockObjective.id) blockObjective.id = "blockObjective";
+    const hObj = document.getElementById("pObjective")?.previousElementSibling;
+    if (hObj && !hObj.id) hObj.id = "hObjective";
+
+    const blockSkills = document.getElementById("pSkills")?.closest(".block");
+    if (blockSkills && !blockSkills.id) blockSkills.id = "blockSkills";
+    const hSkills = document.getElementById("pSkills")?.previousElementSibling;
+    if (hSkills && !hSkills.id) hSkills.id = "hSkills";
+
+    const blockEdu = document.getElementById("pEduInstitution")?.closest(".block");
+    if (blockEdu && !blockEdu.id) blockEdu.id = "blockEducation";
+    const hEdu = blockEdu?.querySelector("h4");
+    if (hEdu && !hEdu.id) hEdu.id = "hEducation";
+
+    const blockCerts = document.getElementById("pCerts")?.closest(".block");
+    if (blockCerts && !blockCerts.id) blockCerts.id = "blockCerts";
+    const hCerts = blockCerts?.querySelector("h4");
+    if (hCerts && !hCerts.id) hCerts.id = "hCerts";
+
+    const blockLangs = document.getElementById("pLanguages")?.closest(".block");
+    if (blockLangs && !blockLangs.id) blockLangs.id = "blockLanguages";
+    const hLangs = blockLangs?.querySelector("h4");
+    if (hLangs && !hLangs.id) hLangs.id = "hLanguages";
+
+    if (!document.getElementById("blockExperience")) {
+      const wrap = document.createElement("div");
+      wrap.className = "two";
+      wrap.id = "templateExtraSections";
+      wrap.innerHTML = '<div class="block" id="blockExperience"><h4 id="hExperience">EXPERIÊNCIA</h4><p id="pExperience" class="text">Adicione sua experiência principal.</p></div><div class="block" id="blockProjects"><h4 id="hProjects">PROJETOS</h4><ul id="pProjects" class="bullets"></ul></div>';
+      paperBody.appendChild(wrap);
+    }
+  }
+
+  function collectRefs() {
+    return {
+      template: document.getElementById("template"),
+      objectiveLabel: document.getElementById("labelObjective"),
+      skillsLabel: document.getElementById("labelSkills"),
+      experienceLabel: document.getElementById("labelExperience"),
+      projectsLabel: document.getElementById("labelProjects"),
+      blockObjective: document.getElementById("blockObjective"),
+      blockSkills: document.getElementById("blockSkills"),
+      blockEducation: document.getElementById("blockEducation"),
+      blockCerts: document.getElementById("blockCerts"),
+      blockLanguages: document.getElementById("blockLanguages"),
+      blockExperience: document.getElementById("blockExperience"),
+      blockProjects: document.getElementById("blockProjects"),
+      hObjective: document.getElementById("hObjective"),
+      hSkills: document.getElementById("hSkills"),
+      hExperience: document.getElementById("hExperience"),
+      hProjects: document.getElementById("hProjects"),
+      inputExperience: document.getElementById("experience"),
+      inputProjects: document.getElementById("projects"),
+      inputPortfolio: document.getElementById("portfolio"),
+      outExperience: document.getElementById("pExperience"),
+      outProjects: document.getElementById("pProjects"),
+      pdfArea: document.getElementById("pdfArea"),
+      printArea: document.getElementById("pdfAreaPrint")
+    };
   }
 
   function bindEvents() {
-    [el.inputExperience, el.inputProjects, el.inputPortfolio].forEach((input) => {
+    refs.template.addEventListener("change", () => {
+      safeStorageSet(TEMPLATE_KEY, readTemplate());
+      updateTemplateUI();
+    });
+
+    [refs.inputExperience, refs.inputProjects, refs.inputPortfolio].forEach((input) => {
+      if (!input) return;
       input.addEventListener("input", () => {
-        safeStorageSet(storageKey(input.id), input.value);
-        updateEnhancements();
+        safeStorageSet(`${STORAGE_PREFIX}${input.id}`, input.value);
+        renderExtraContent();
       });
     });
 
-    el.template.addEventListener("change", () => {
-      safeStorageSet(TEMPLATE_STORAGE_KEY, readSafeTemplate());
-      updateEnhancements();
-    });
-    el.btnPreview.addEventListener("click", updateEnhancements);
-    el.btnPdf.addEventListener("click", updateEnhancements, true);
-    el.btnClear.addEventListener("click", () => {
+    btnPreview?.addEventListener("click", updateTemplateUI);
+    btnPdf?.addEventListener("click", updateTemplateUI, true);
+    btnClear?.addEventListener("click", () => {
       setTimeout(() => {
-        clearExtraFieldsIfNeeded();
+        EXTRA_KEYS.forEach((k) => {
+          const input = document.getElementById(k);
+          if (input) input.value = "";
+          safeStorageRemove(`${STORAGE_PREFIX}${k}`);
+        });
+        refs.template.value = DEFAULT_TEMPLATE;
+        safeStorageSet(TEMPLATE_KEY, DEFAULT_TEMPLATE);
+        updateTemplateUI();
       }, 0);
     });
   }
 
-  function updateEnhancements() {
-    const template = readSafeTemplate();
-    const config = templateConfig[template] || templateConfig.classic;
-
-    applyTemplateToPreview(template);
-    updateLabels(config.labels);
-    updateHeadings(config.headings);
-    updateVisibility(config.show);
-    renderExtraContent();
-    ensurePortfolioInContact();
-  }
-
-
   function restoreTemplate() {
-    const saved = safeStorageGet(TEMPLATE_STORAGE_KEY);
-    const safe = templateConfig[saved] ? saved : DEFAULT_TEMPLATE;
-    el.template.value = safe;
-    applyTemplateToPreview(safe);
+    const saved = safeStorageGet(TEMPLATE_KEY);
+    refs.template.value = templates[saved] ? saved : DEFAULT_TEMPLATE;
   }
 
-  function applyTemplateToPreview(template) {
-    const safe = templateConfig[template] ? template : DEFAULT_TEMPLATE;
-    el.pdfArea.dataset.template = safe;
-    if (el.printArea) el.printArea.dataset.template = safe;
+  function restoreExtraFields() {
+    EXTRA_KEYS.forEach((k) => {
+      const v = safeStorageGet(`${STORAGE_PREFIX}${k}`);
+      const input = document.getElementById(k);
+      if (input && v !== null) input.value = v;
+    });
   }
 
-  function updateLabels(labels) {
-    el.labelObjective.textContent = labels.objective;
-    el.labelSkills.textContent = labels.skills;
-    el.labelExperience.textContent = labels.experience;
-    el.labelProjects.textContent = labels.projects;
+  function readTemplate() {
+    return templates[refs.template.value] ? refs.template.value : DEFAULT_TEMPLATE;
   }
 
-  function updateHeadings(headings) {
-    el.hObjective.textContent = headings.objective;
-    el.hSkills.textContent = headings.skills;
-    el.hEducation.textContent = headings.education;
-    el.hCerts.textContent = headings.certs;
-    el.hLanguages.textContent = headings.languages;
-    el.hExperience.textContent = headings.experience;
-    el.hProjects.textContent = headings.projects;
-  }
+  function updateTemplateUI() {
+    const key = readTemplate();
+    const cfg = templates[key];
+    refs.pdfArea.dataset.template = key;
+    if (refs.printArea) refs.printArea.dataset.template = key;
 
-  function updateVisibility(show) {
+    refs.objectiveLabel.textContent = cfg.labelObjective;
+    refs.skillsLabel.textContent = cfg.labelSkills;
+    if (refs.experienceLabel) refs.experienceLabel.textContent = "EXPERIÊNCIA / DESTAQUES";
+    if (refs.projectsLabel) refs.projectsLabel.textContent = "PROJETOS (1 por linha)";
+
+    refs.hObjective.textContent = cfg.headingObjective;
+    refs.hSkills.textContent = cfg.headingSkills;
+    refs.hExperience.textContent = cfg.headingExperience;
+    refs.hProjects.textContent = cfg.headingProjects;
+
     const blocks = {
-      objective: el.blockObjective,
-      skills: el.blockSkills,
-      education: el.blockEducation,
-      certs: el.blockCerts,
-      languages: el.blockLanguages,
-      experience: el.blockExperience,
-      projects: el.blockProjects
+      objective: refs.blockObjective,
+      skills: refs.blockSkills,
+      education: refs.blockEducation,
+      certs: refs.blockCerts,
+      languages: refs.blockLanguages,
+      experience: refs.blockExperience,
+      projects: refs.blockProjects
     };
-
-    for (const [key, block] of Object.entries(blocks)) {
-      block.style.display = show.includes(key) ? "block" : "none";
+    for (const [name, el] of Object.entries(blocks)) {
+      if (!el) continue;
+      el.style.display = cfg.show.includes(name) ? "block" : "none";
     }
+
+    renderExtraContent();
+    renderPortfolioInContact();
   }
 
   function renderExtraContent() {
-    el.pExperience.textContent = el.inputExperience.value.trim() || "Adicione sua experiência principal.";
-    renderProjectList(el.pProjects, el.inputProjects.value);
-  }
+    if (refs.outExperience) refs.outExperience.textContent = refs.inputExperience?.value.trim() || "Adicione sua experiência principal.";
 
-  function renderProjectList(list, text) {
-    while (list.firstChild) list.removeChild(list.firstChild);
-    const items = text.split("\n").map((line) => line.trim()).filter(Boolean);
-
-    if (items.length === 0) {
-      const li = document.createElement("li");
-      li.textContent = "Adicione projetos para aparecerem aqui.";
-      list.appendChild(li);
-      return;
-    }
-
-    for (const item of items) {
+    if (!refs.outProjects) return;
+    while (refs.outProjects.firstChild) refs.outProjects.removeChild(refs.outProjects.firstChild);
+    const lines = (refs.inputProjects?.value || "").split("\n").map((v) => v.trim()).filter(Boolean);
+    const items = lines.length > 0 ? lines : ["Adicione projetos para aparecerem aqui."];
+    items.forEach((item) => {
       const li = document.createElement("li");
       li.textContent = item;
-      list.appendChild(li);
-    }
+      refs.outProjects.appendChild(li);
+    });
   }
 
-  function ensurePortfolioInContact() {
-    const portfolioValue = el.inputPortfolio.value.trim();
-    const old = el.pContact.querySelector('[data-extra="portfolio"]');
+  function renderPortfolioInContact() {
+    const old = contactBox.querySelector('[data-extra="portfolio"]');
     if (old) old.remove();
 
-    if (!portfolioValue) return;
+    const val = refs.inputPortfolio?.value.trim();
+    if (!val) return;
 
-    const line = document.createElement("div");
-    line.dataset.extra = "portfolio";
-
-    const url = normalizeUrl(portfolioValue);
+    const div = document.createElement("div");
+    div.dataset.extra = "portfolio";
+    const url = normalizeUrl(val);
     if (!url) {
-      line.textContent = `Portfólio: ${portfolioValue}`;
+      div.textContent = `Portfólio: ${val}`;
     } else {
       const a = document.createElement("a");
       a.href = url;
       a.target = "_blank";
       a.rel = "noopener noreferrer";
-      a.textContent = `Portfólio: ${portfolioValue}`;
-      line.appendChild(a);
+      a.textContent = `Portfólio: ${val}`;
+      div.appendChild(a);
     }
-
-    el.pContact.appendChild(line);
-  }
-
-  function clearExtraFieldsIfNeeded() {
-    const hasPrimaryData = ["name", "objective", "skills", "eduInstitution"].some((id) => {
-      const node = document.getElementById(id);
-      return node && node.value.trim() !== "";
-    });
-
-    if (hasPrimaryData) return;
-
-    for (const field of EXTRA_FIELDS) {
-      const input = document.getElementById(field);
-      input.value = "";
-      safeStorageRemove(storageKey(field));
-    }
-
-    updateEnhancements();
-  }
-
-  function restoreExtraFields() {
-    for (const field of EXTRA_FIELDS) {
-      const value = safeStorageGet(storageKey(field));
-      if (value !== null) {
-        document.getElementById(field).value = value;
-      }
-    }
-  }
-
-  function readSafeTemplate() {
-    const selected = (el.template.value || "").trim();
-    return templateConfig[selected] ? selected : DEFAULT_TEMPLATE;
-  }
-
-  function storageKey(id) {
-    return `${STORAGE_KEY_PREFIX}${id}`;
-  }
-
-  function safeStorageGet(key) {
-    try { return localStorage.getItem(key); } catch { return null; }
-  }
-
-  function safeStorageSet(key, value) {
-    try { localStorage.setItem(key, value); } catch {}
-  }
-
-  function safeStorageRemove(key) {
-    try { localStorage.removeItem(key); } catch {}
+    contactBox.appendChild(div);
   }
 
   function normalizeUrl(input) {
     const raw = (input || "").trim();
     if (!raw) return null;
-
-    const candidate = raw.startsWith("http://") || raw.startsWith("https://")
-      ? raw
-      : `https://${raw}`;
-
+    const candidate = raw.startsWith("http://") || raw.startsWith("https://") ? raw : `https://${raw}`;
     try {
-      const url = new URL(candidate);
-      return (url.protocol === "https:" || url.protocol === "http:") ? url.toString() : null;
+      const u = new URL(candidate);
+      return (u.protocol === "http:" || u.protocol === "https:") ? u.toString() : null;
     } catch {
       return null;
     }
+  }
+
+  function safeStorageGet(key) {
+    try { return localStorage.getItem(key); } catch { return null; }
+  }
+  function safeStorageSet(key, value) {
+    try { localStorage.setItem(key, value); } catch {}
+  }
+  function safeStorageRemove(key) {
+    try { localStorage.removeItem(key); } catch {}
   }
 })();
