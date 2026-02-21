@@ -18,14 +18,12 @@ const FIELD_IDS = Object.freeze([
 
 const STORAGE_KEY_PREFIX = "cv_pdf_";
 const DEFAULT_TEMPLATE = "classic";
-const THEME_STORAGE_KEY = `${STORAGE_KEY_PREFIX}theme`;
 
 const ui = Object.freeze({
   status: getEl("status"),
   pdfArea: getEl("pdfArea"),
   printArea: getEl("pdfAreaPrint"),
 
-  btnTheme: getEl("btnTheme"),
   btnPreview: getEl("btnPreview"),
   btnPdf: getEl("btnPdf"),
   btnClear: getEl("btnClear"),
@@ -88,7 +86,6 @@ const validators = Object.freeze({
 init();
 
 function init() {
-  restoreTheme();
   bindEvents();
   restoreFormFromStorage();
   attachInputGuards();
@@ -98,7 +95,6 @@ function init() {
 }
 
 function bindEvents() {
-  ui.btnTheme.addEventListener("click", toggleTheme);
   ui.inputs.template.addEventListener("change", applyTemplateFromSelection);
   ui.btnPreview.addEventListener("click", renderPreview);
   ui.btnPdf.addEventListener("click", generatePdf);
@@ -201,31 +197,6 @@ function generatePdf() {
 }
 
 
-function restoreTheme() {
-  const savedTheme = safeStorageGet(THEME_STORAGE_KEY);
-  const validTheme = savedTheme === "light" || savedTheme === "dark" ? savedTheme : "dark";
-  applyTheme(validTheme);
-}
-
-function toggleTheme() {
-  const current = document.documentElement.dataset.theme === "light" ? "light" : "dark";
-  const next = current === "dark" ? "light" : "dark";
-  applyTheme(next);
-  safeStorageSet(THEME_STORAGE_KEY, next);
-}
-
-function applyTheme(theme) {
-  const safeTheme = theme === "light" ? "light" : "dark";
-  document.documentElement.dataset.theme = safeTheme;
-
-  if (safeTheme === "light") {
-    ui.btnTheme.textContent = "☀️ Tema claro";
-    ui.btnTheme.setAttribute("aria-label", "Alternar para tema escuro");
-  } else {
-    ui.btnTheme.textContent = "🌙 Tema escuro";
-    ui.btnTheme.setAttribute("aria-label", "Alternar para tema claro");
-  }
-}
 
 function applyTemplateFromSelection() {
   const selected = ui.inputs.template.value || DEFAULT_TEMPLATE;

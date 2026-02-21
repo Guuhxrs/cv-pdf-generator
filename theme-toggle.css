@@ -1,0 +1,30 @@
+.actions #btnTheme{
+  min-width: 140px;
+}
+
+:root[data-theme="light"]{
+  --bg: #f3f6fb;
+  --card: rgba(255,255,255,.9);
+  --border: rgba(15,23,42,.15);
+  --text: #0f172a;
+  --muted: rgba(15,23,42,.74);
+  --primary: #315efb;
+}
+
+:root[data-theme="light"] body{
+  background:
+    radial-gradient(1100px 600px at 10% 10%, #dbeafe 0%, transparent 60%),
+    radial-gradient(900px 500px at 90% 20%, #e0e7ff 0%, transparent 55%),
+    var(--bg);
+}
+
+:root[data-theme="light"] input,
+:root[data-theme="light"] textarea,
+:root[data-theme="light"] select{
+  background: rgba(241,245,249,.92);
+  border-color: rgba(148,163,184,.55);
+}
+
+:root[data-theme="light"] button:not(.primary):not(.danger){
+  background: rgba(241,245,249,.95);
+}
