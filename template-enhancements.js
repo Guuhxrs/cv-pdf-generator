@@ -3,31 +3,105 @@
 (function templateEnhancements() {
   const EXTRA_FIELDS = ["experience", "projects", "portfolio"];
   const STORAGE_KEY_PREFIX = "cv_pdf_";
+  const FALLBACK_TEMPLATE = "classic";
+  const ALLOWED_TEMPLATES = Object.freeze([
+    "classic",
+    "modern",
+    "minimal",
+    "corporate",
+    "creative"
+  ]);
+  const CONTACT_EXTRA_SELECTOR = '[data-extra="portfolio"]';
 
   const templateConfig = Object.freeze({
     classic: {
-      labels: { objective: "OBJETIVOS", skills: "COMPETÊNCIAS (1 por linha)", experience: "EXPERIÊNCIA / DESTAQUES", projects: "PROJETOS (1 por linha)" },
-      headings: { objective: "OBJETIVOS", skills: "COMPETÊNCIAS", education: "FORMAÇÃO", certs: "CERTIFICADOS E LICENÇAS", languages: "IDIOMAS", experience: "EXPERIÊNCIA", projects: "PROJETOS" },
+      labels: {
+        objective: "OBJETIVOS",
+        skills: "COMPETÊNCIAS (1 por linha)",
+        experience: "EXPERIÊNCIA / DESTAQUES",
+        projects: "PROJETOS (1 por linha)"
+      },
+      headings: {
+        objective: "OBJETIVOS",
+        skills: "COMPETÊNCIAS",
+        education: "FORMAÇÃO",
+        certs: "CERTIFICADOS E LICENÇAS",
+        languages: "IDIOMAS",
+        experience: "EXPERIÊNCIA",
+        projects: "PROJETOS"
+      },
       show: ["objective", "skills", "education", "certs", "languages", "experience", "projects"]
     },
     modern: {
-      labels: { objective: "RESUMO PROFISSIONAL", skills: "STACK / TECNOLOGIAS", experience: "IMPACTO PROFISSIONAL", projects: "CASOS / PROJETOS" },
-      headings: { objective: "RESUMO PROFISSIONAL", skills: "STACK", education: "FORMAÇÃO", certs: "CERTIFICAÇÕES", languages: "IDIOMAS", experience: "IMPACTO", projects: "CASOS" },
+      labels: {
+        objective: "RESUMO PROFISSIONAL",
+        skills: "STACK / TECNOLOGIAS",
+        experience: "IMPACTO PROFISSIONAL",
+        projects: "CASOS / PROJETOS"
+      },
+      headings: {
+        objective: "RESUMO PROFISSIONAL",
+        skills: "STACK",
+        education: "FORMAÇÃO",
+        certs: "CERTIFICAÇÕES",
+        languages: "IDIOMAS",
+        experience: "IMPACTO",
+        projects: "CASOS"
+      },
       show: ["objective", "skills", "education", "experience", "projects", "certs"]
     },
     minimal: {
-      labels: { objective: "SOBRE MIM", skills: "PONTOS FORTES", experience: "TRAJETÓRIA", projects: "TRABALHOS" },
-      headings: { objective: "SOBRE", skills: "PONTOS FORTES", education: "FORMAÇÃO", certs: "CURSOS", languages: "IDIOMAS", experience: "TRAJETÓRIA", projects: "TRABALHOS" },
+      labels: {
+        objective: "SOBRE MIM",
+        skills: "PONTOS FORTES",
+        experience: "TRAJETÓRIA",
+        projects: "TRABALHOS"
+      },
+      headings: {
+        objective: "SOBRE",
+        skills: "PONTOS FORTES",
+        education: "FORMAÇÃO",
+        certs: "CURSOS",
+        languages: "IDIOMAS",
+        experience: "TRAJETÓRIA",
+        projects: "TRABALHOS"
+      },
       show: ["objective", "skills", "education", "experience"]
     },
     corporate: {
-      labels: { objective: "RESUMO EXECUTIVO", skills: "COMPETÊNCIAS ESTRATÉGICAS", experience: "RESULTADOS E LIDERANÇA", projects: "INICIATIVAS RELEVANTES" },
-      headings: { objective: "RESUMO EXECUTIVO", skills: "COMPETÊNCIAS-CHAVE", education: "FORMAÇÃO ACADÊMICA", certs: "CERTIFICAÇÕES", languages: "IDIOMAS", experience: "RESULTADOS E LIDERANÇA", projects: "INICIATIVAS" },
+      labels: {
+        objective: "RESUMO EXECUTIVO",
+        skills: "COMPETÊNCIAS ESTRATÉGICAS",
+        experience: "RESULTADOS E LIDERANÇA",
+        projects: "INICIATIVAS RELEVANTES"
+      },
+      headings: {
+        objective: "RESUMO EXECUTIVO",
+        skills: "COMPETÊNCIAS-CHAVE",
+        education: "FORMAÇÃO ACADÊMICA",
+        certs: "CERTIFICAÇÕES",
+        languages: "IDIOMAS",
+        experience: "RESULTADOS E LIDERANÇA",
+        projects: "INICIATIVAS"
+      },
       show: ["objective", "skills", "education", "certs", "languages", "experience"]
     },
     creative: {
-      labels: { objective: "MANIFESTO CRIATIVO", skills: "FERRAMENTAS E LINGUAGENS", experience: "EXPERIÊNCIAS CRIATIVAS", projects: "PORTFÓLIO (1 por linha)" },
-      headings: { objective: "MANIFESTO", skills: "FERRAMENTAS", education: "FORMAÇÃO", certs: "PRÊMIOS / CURSOS", languages: "IDIOMAS", experience: "EXPERIÊNCIAS", projects: "PORTFÓLIO" },
+      labels: {
+        objective: "MANIFESTO CRIATIVO",
+        skills: "FERRAMENTAS E LINGUAGENS",
+        experience: "EXPERIÊNCIAS CRIATIVAS",
+        projects: "PORTFÓLIO (1 por linha)"
+      },
+      headings: {
+        objective: "MANIFESTO",
+        skills: "FERRAMENTAS",
+        education: "FORMAÇÃO",
+        certs: "PRÊMIOS / CURSOS",
+        languages: "IDIOMAS",
+        experience: "EXPERIÊNCIAS",
+        projects: "PORTFÓLIO"
+      },
       show: ["objective", "skills", "projects", "experience", "languages"]
     }
   });
@@ -101,7 +175,7 @@
 
   function updateEnhancements() {
     const template = readSafeTemplate();
-    const config = templateConfig[template] || templateConfig.classic;
+    const config = templateConfig[template] || templateConfig[FALLBACK_TEMPLATE];
 
     updateLabels(config.labels);
     updateHeadings(config.headings);
@@ -149,8 +223,8 @@
   }
 
   function renderProjectList(list, text) {
-    while (list.firstChild) list.removeChild(list.firstChild);
-    const items = text.split("\n").map((line) => line.trim()).filter(Boolean);
+    clearChildren(list);
+    const items = splitLines(text);
 
     if (items.length === 0) {
       const li = document.createElement("li");
@@ -168,7 +242,7 @@
 
   function ensurePortfolioInContact() {
     const portfolioValue = el.inputPortfolio.value.trim();
-    const old = el.pContact.querySelector('[data-extra="portfolio"]');
+    const old = el.pContact.querySelector(CONTACT_EXTRA_SELECTOR);
     if (old) old.remove();
 
     if (!portfolioValue) return;
@@ -176,16 +250,11 @@
     const line = document.createElement("div");
     line.dataset.extra = "portfolio";
 
-    const url = normalizeUrl(portfolioValue);
-    if (!url) {
+    const link = buildPortfolioLink(portfolioValue);
+    if (!link) {
       line.textContent = `Portfólio: ${portfolioValue}`;
     } else {
-      const a = document.createElement("a");
-      a.href = url;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer";
-      a.textContent = `Portfólio: ${portfolioValue}`;
-      line.appendChild(a);
+      line.appendChild(link);
     }
 
     el.pContact.appendChild(line);
@@ -218,8 +287,9 @@
   }
 
   function readSafeTemplate() {
-    const allowed = ["classic", "modern", "minimal", "corporate", "creative"];
-    return allowed.includes(el.template.value) ? el.template.value : "classic";
+    return ALLOWED_TEMPLATES.includes(el.template.value)
+      ? el.template.value
+      : FALLBACK_TEMPLATE;
   }
 
   function storageKey(id) {
@@ -252,5 +322,28 @@
     } catch {
       return null;
     }
+  }
+
+  function buildPortfolioLink(portfolioValue) {
+    const url = normalizeUrl(portfolioValue);
+    if (!url) return null;
+
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+    anchor.textContent = `Portfólio: ${portfolioValue}`;
+    return anchor;
+  }
+
+  function splitLines(text) {
+    return (text || "")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+  }
+
+  function clearChildren(node) {
+    while (node.firstChild) node.removeChild(node.firstChild);
   }
 })();

@@ -6,7 +6,7 @@ Gerador de currículo em PDF feito com **HTML, CSS e JavaScript puro**, com foco
 
 ## 🚀 Funcionalidades
 
-- ✨ Geração de currículo em PDF via impressão do navegador
+- ✨ Geração de currículo em PDF com download direto no navegador
 - 💾 Salvamento automático local com `localStorage`
 - 📱 Interface responsiva (desktop e mobile)
 - 🧩 **5 modelos de currículo** com diferenças visuais:
@@ -22,6 +22,7 @@ Gerador de currículo em PDF feito com **HTML, CSS e JavaScript puro**, com foco
   - Portfólio
 - 🔒 Validações de formulário e sanitização em runtime
 - 🛡️ Boas práticas de segurança front-end (CSP + DOM seguro)
+- 🎛️ Interface estilo dashboard com barra superior, menu lateral e editor + prévia lado a lado
 
 ---
 
@@ -80,7 +81,7 @@ Gerador de currículo em PDF feito com **HTML, CSS e JavaScript puro**, com foco
 
 - [ ] Tema claro/escuro manual
 - [x] Templates diferentes de currículo
-- [ ] Exportação direta para PDF (sem impressão)
+- [x] Exportação direta para PDF (sem impressão)
 - [ ] Reordenação de seções por drag-and-drop
 - [ ] Transformação em PWA (app instalável)
 
