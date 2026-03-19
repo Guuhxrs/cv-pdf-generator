@@ -22,7 +22,6 @@ const DEFAULT_TEMPLATE = "classic";
 const ui = Object.freeze({
   status: getEl("status"),
   pdfArea: getEl("pdfArea"),
-  printArea: getEl("pdfAreaPrint"),
 
   btnPreview: getEl("btnPreview"),
   btnPdf: getEl("btnPdf"),
@@ -191,9 +190,12 @@ function generatePdf() {
   }
 
   renderPreview();
-  syncPrintArea();
-  setStatus("Abrindo impressão… 🖨️");
-  window.print();
+  setStatus("Gerando PDF… ⏳");
+
+  const pdfData = buildPdfData(data);
+  const pdfBytes = createPdfDocument(pdfData.lines);
+  downloadPdf(pdfBytes, pdfData.fileName);
+  setStatus("PDF gerado com sucesso ✅");
 }
 
 function applyTemplateFromSelection() {
@@ -202,7 +204,6 @@ function applyTemplateFromSelection() {
   const safeTemplate = allowedTemplates.includes(selected) ? selected : DEFAULT_TEMPLATE;
 
   ui.pdfArea.dataset.template = safeTemplate;
-  ui.printArea.dataset.template = safeTemplate;
 }
 
 function clearAll() {
@@ -417,10 +418,170 @@ function debounceStatus(msg, delayMs) {
   window.__statusTimer = setTimeout(() => setStatus(msg), delayMs);
 }
 
-function syncPrintArea() {
-  clearChildren(ui.printArea);
-  const clone = ui.pdfArea.cloneNode(true);
-  clone.dataset.template = ui.pdfArea.dataset.template || DEFAULT_TEMPLATE;
-  clone.removeAttribute("id");
-  ui.printArea.appendChild(clone);
+function buildPdfData(data) {
+  const experience = readOptionalInputValue("experience");
+  const projects = readOptionalInputValue("projects");
+  const portfolio = readOptionalInputValue("portfolio");
+
+  const lines = [];
+  lines.push(data.name || "Currículo");
+  lines.push("");
+
+  const contacts = [];
+  if (data.email) contacts.push(`E-mail: ${data.email}`);
+  if (data.phone) contacts.push(`Telefone: ${data.phone}`);
+  if (data.github) contacts.push(`GitHub: ${data.github}`);
+  if (data.linkedin) contacts.push(`LinkedIn: ${data.linkedin}`);
+  if (portfolio) contacts.push(`Portfólio: ${portfolio}`);
+  if (contacts.length > 0) {
+    lines.push(...contacts);
+    lines.push("");
+  }
+
+  pushSection(lines, "OBJETIVO", splitLines(data.objective));
+  pushSection(lines, "COMPETÊNCIAS", splitLines(data.skills), true);
+  pushSection(lines, "EXPERIÊNCIA", splitLines(experience));
+
+  const educationLines = [data.eduInstitution, data.eduCourse, data.eduPeriod, data.eduDescription]
+    .filter(Boolean);
+  pushSection(lines, "FORMAÇÃO", educationLines);
+  pushSection(lines, "PROJETOS", splitLines(projects), true);
+  pushSection(lines, "CERTIFICADOS", splitLines(data.certs), true);
+  pushSection(lines, "IDIOMAS", splitLines(data.languages), true);
+
+  return {
+    lines,
+    fileName: makePdfFileName(data.name)
+  };
+}
+
+function pushSection(targetLines, title, sectionLines, asBullets = false) {
+  if (!sectionLines || sectionLines.length === 0) return;
+
+  targetLines.push(title);
+  if (asBullets) {
+    for (const item of sectionLines) {
+      targetLines.push(`• ${item}`);
+    }
+  } else {
+    targetLines.push(...sectionLines);
+  }
+  targetLines.push("");
+}
+
+function readOptionalInputValue(id) {
+  const field = document.getElementById(id);
+  return field ? field.value.trim() : "";
+}
+
+function makePdfFileName(name) {
+  const clean = (name || "curriculo")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 50);
+
+  return `${clean || "curriculo"}-${new Date().toISOString().slice(0, 10)}.pdf`;
+}
+
+function createPdfDocument(lines) {
+  const startY = 800;
+  const bottomMargin = 50;
+  const lineHeight = 16;
+  const pages = [];
+  let currentPage = [];
+  let y = startY;
+
+  for (const rawLine of lines) {
+    if (y < bottomMargin) {
+      pages.push(currentPage);
+      currentPage = [];
+      y = startY;
+    }
+
+    const safeLine = escapePdfText(rawLine || " ");
+    currentPage.push(`BT /F1 11 Tf 40 ${y} Td (${safeLine}) Tj ET`);
+    y -= lineHeight;
+  }
+
+  if (currentPage.length === 0) {
+    currentPage.push("BT /F1 11 Tf 40 800 Td (Currículo) Tj ET");
+  }
+  pages.push(currentPage);
+
+  return buildPdfBytes(pages);
+}
+
+function buildPdfBytes(pageStreams) {
+  const objects = {};
+  let nextId = 1;
+
+  const fontId = nextId++;
+  objects[fontId] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>";
+
+  const contentIds = pageStreams.map(() => nextId++);
+  const pageIds = pageStreams.map(() => nextId++);
+  const pagesId = nextId++;
+  const catalogId = nextId++;
+
+  pageStreams.forEach((commands, index) => {
+    const stream = commands.join("\n");
+    objects[contentIds[index]] = `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`;
+  });
+
+  objects[pagesId] = `<< /Type /Pages /Count ${pageIds.length} /Kids [${pageIds.map((id) => `${id} 0 R`).join(" ")}] >>`;
+
+  pageIds.forEach((pageId, index) => {
+    objects[pageId] = [
+      "<< /Type /Page",
+      `/Parent ${pagesId} 0 R`,
+      "/MediaBox [0 0 595 842]",
+      `/Resources << /Font << /F1 ${fontId} 0 R >> >>`,
+      `/Contents ${contentIds[index]} 0 R`,
+      ">>"
+    ].join(" ");
+  });
+
+  objects[catalogId] = `<< /Type /Catalog /Pages ${pagesId} 0 R >>`;
+
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+  const maxId = catalogId;
+
+  for (let id = 1; id <= maxId; id++) {
+    offsets[id] = pdf.length;
+    pdf += `${id} 0 obj\n${objects[id]}\nendobj\n`;
+  }
+
+  const xrefStart = pdf.length;
+  pdf += `xref\n0 ${maxId + 1}\n`;
+  pdf += "0000000000 65535 f \n";
+  for (let id = 1; id <= maxId; id++) {
+    pdf += `${String(offsets[id]).padStart(10, "0")} 00000 n \n`;
+  }
+
+  pdf += `trailer\n<< /Size ${maxId + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
+
+  return new TextEncoder().encode(pdf);
+}
+
+function escapePdfText(text) {
+  return (text || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/\(/g, "\\(")
+    .replace(/\)/g, "\\)");
+}
+
+function downloadPdf(bytes, fileName) {
+  const blob = new Blob([bytes], { type: "application/pdf" });
+  const blobUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = blobUrl;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(blobUrl);
 }
