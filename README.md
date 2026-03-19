@@ -22,6 +22,7 @@ Gerador de currículo em PDF feito com **HTML, CSS e JavaScript puro**, com foco
   - Portfólio
 - 🔒 Validações de formulário e sanitização em runtime
 - 🛡️ Boas práticas de segurança front-end (CSP + DOM seguro)
+- 🎛️ Interface estilo dashboard com barra superior, menu lateral e editor + prévia lado a lado
 
 ---
 
