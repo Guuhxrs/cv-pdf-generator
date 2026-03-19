@@ -491,8 +491,10 @@ function clearData() {
 
 // ── GENERATE PDF ──
 function generatePDF() {
-  showToast('Preparando PDF para impressão...');
-  setTimeout(() => window.print(), 300);
+  const { lines, fileName } = buildPdfDataFromState();
+  const pdfBytes = createPdfDocument(lines);
+  downloadPdf(pdfBytes, fileName);
+  showToast('PDF gerado com sucesso.');
 }
 
 // ── TOAST ──
@@ -517,6 +519,191 @@ function initTheme() {
     document.documentElement.classList.add('dark');
     document.getElementById('theme-checkbox').checked = true;
   }
+}
+
+function buildPdfDataFromState() {
+  const lines = [];
+
+  lines.push((state.fullName || 'Seu Nome').trim());
+  if (state.jobTitle) lines.push(state.jobTitle.trim());
+  lines.push('');
+
+  if (state.email) lines.push(`E-mail: ${state.email.trim()}`);
+  if (state.phone) lines.push(`Telefone: ${state.phone.trim()}`);
+  if (state.location) lines.push(`Localização: ${state.location.trim()}`);
+  if (state.linkedin) lines.push(`LinkedIn/Site: ${state.linkedin.trim()}`);
+  lines.push('');
+
+  pushSection(lines, 'RESUMO', state.summary ? [state.summary] : []);
+  pushSection(lines, 'COMPETÊNCIAS', state.tags, true);
+
+  const expLines = [];
+  state.experience.forEach((item) => {
+    if (!item.company) return;
+    expLines.push(`${item.company}${item.period ? ` (${item.period})` : ''}`);
+    if (item.role) expLines.push(`Cargo: ${item.role}`);
+    if (item.desc) expLines.push(item.desc);
+    expLines.push('');
+  });
+  pushSection(lines, 'EXPERIÊNCIA', expLines.filter(Boolean));
+
+  const eduLines = [];
+  state.education.forEach((item) => {
+    if (!item.institution) return;
+    const end = item.current ? 'Cursando' : (item.end || '');
+    const period = item.start ? `${item.start}${end ? ` — ${end}` : ''}` : '';
+    eduLines.push(`${item.institution}${period ? ` (${period})` : ''}`);
+    if (item.course) eduLines.push(item.course);
+    eduLines.push('');
+  });
+  pushSection(lines, 'FORMAÇÃO', eduLines.filter(Boolean));
+
+  const skillLines = state.skills
+    .filter((item) => item.name)
+    .map((item) => `${item.name} (${item.level || 0}%)`);
+  pushSection(lines, 'HABILIDADES', skillLines, true);
+
+  const certLines = state.certs
+    .filter((item) => item.name)
+    .map((item) => `${item.name}${item.issuer ? ` — ${item.issuer}` : ''}${item.year ? ` (${item.year})` : ''}`);
+  pushSection(lines, 'CERTIFICADOS', certLines, true);
+
+  const projectLines = [];
+  state.projects.forEach((item) => {
+    if (!item.name) return;
+    projectLines.push(item.name);
+    if (item.link) projectLines.push(`Link: ${item.link}`);
+    if (item.desc) projectLines.push(item.desc);
+    projectLines.push('');
+  });
+  pushSection(lines, 'PROJETOS', projectLines.filter(Boolean));
+
+  return {
+    lines,
+    fileName: makePdfFileName(state.fullName)
+  };
+}
+
+function pushSection(targetLines, title, contentLines, asBullets = false) {
+  if (!contentLines || contentLines.length === 0) return;
+
+  targetLines.push(title);
+  if (asBullets) {
+    contentLines.forEach((line) => targetLines.push(`• ${line}`));
+  } else {
+    contentLines.forEach((line) => targetLines.push(line));
+  }
+  targetLines.push('');
+}
+
+function makePdfFileName(name) {
+  const safe = (name || 'curriculo')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 50);
+
+  return `${safe || 'curriculo'}-${new Date().toISOString().slice(0, 10)}.pdf`;
+}
+
+function createPdfDocument(lines) {
+  const startY = 800;
+  const bottomMargin = 50;
+  const lineHeight = 16;
+  const pages = [];
+  let currentPage = [];
+  let y = startY;
+
+  lines.forEach((rawLine) => {
+    if (y < bottomMargin) {
+      pages.push(currentPage);
+      currentPage = [];
+      y = startY;
+    }
+
+    currentPage.push(`BT /F1 11 Tf 40 ${y} Td (${escapePdfText(rawLine || ' ')}) Tj ET`);
+    y -= lineHeight;
+  });
+
+  if (currentPage.length === 0) {
+    currentPage.push('BT /F1 11 Tf 40 800 Td (Currículo) Tj ET');
+  }
+  pages.push(currentPage);
+
+  return buildPdfBytes(pages);
+}
+
+function buildPdfBytes(pageStreams) {
+  const objects = {};
+  let nextId = 1;
+
+  const fontId = nextId++;
+  objects[fontId] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
+
+  const contentIds = pageStreams.map(() => nextId++);
+  const pageIds = pageStreams.map(() => nextId++);
+  const pagesId = nextId++;
+  const catalogId = nextId++;
+
+  pageStreams.forEach((commands, index) => {
+    const stream = commands.join('\n');
+    objects[contentIds[index]] = `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`;
+  });
+
+  objects[pagesId] = `<< /Type /Pages /Count ${pageIds.length} /Kids [${pageIds.map((id) => `${id} 0 R`).join(' ')}] >>`;
+
+  pageIds.forEach((pageId, index) => {
+    objects[pageId] = [
+      '<< /Type /Page',
+      `/Parent ${pagesId} 0 R`,
+      '/MediaBox [0 0 595 842]',
+      `/Resources << /Font << /F1 ${fontId} 0 R >> >>`,
+      `/Contents ${contentIds[index]} 0 R`,
+      '>>'
+    ].join(' ');
+  });
+
+  objects[catalogId] = `<< /Type /Catalog /Pages ${pagesId} 0 R >>`;
+
+  let pdf = '%PDF-1.4\n';
+  const offsets = [0];
+  const maxId = catalogId;
+
+  for (let id = 1; id <= maxId; id += 1) {
+    offsets[id] = pdf.length;
+    pdf += `${id} 0 obj\n${objects[id]}\nendobj\n`;
+  }
+
+  const xrefStart = pdf.length;
+  pdf += `xref\n0 ${maxId + 1}\n`;
+  pdf += '0000000000 65535 f \n';
+  for (let id = 1; id <= maxId; id += 1) {
+    pdf += `${String(offsets[id]).padStart(10, '0')} 00000 n \n`;
+  }
+
+  pdf += `trailer\n<< /Size ${maxId + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
+  return new TextEncoder().encode(pdf);
+}
+
+function escapePdfText(text) {
+  return (text || '')
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)');
+}
+
+function downloadPdf(bytes, fileName) {
+  const blob = new Blob([bytes], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 // ── START ──
