@@ -213,6 +213,14 @@ button.danger {
   padding: 6px 10px;
 }
 
+.hint {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .paper {
   background: var(--paperBg);
   color: var(--paperText);
