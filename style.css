@@ -254,21 +254,6 @@ button:not(.primary):not(.danger){
   text-align: center;
 }
 
-/* --------- PRINT --------- */
-.print-only{ display:none; }
-
-@media print{
-  body{ background: #fff !important; }
-  .no-print{ display:none !important; }
-  .print-only{ display:block !important; }
-
-  .paper{
-    border: none !important;
-    border-radius: 0 !important;
-    padding: 22px !important;
-  }
-}
-
 /* --------- TEMPLATE VARIANTS --------- */
 .paper[data-template="modern"]{
   border: 2px solid #dbeafe;
