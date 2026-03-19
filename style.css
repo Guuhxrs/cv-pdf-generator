@@ -313,23 +313,6 @@ button.danger {
   text-align: center;
 }
 
-@media (max-width: 1180px) {
-  .workspace { grid-template-columns: 1fr; }
-  .form-panel { max-height: none; }
-}
-
-@media (max-width: 860px) {
-  .layout { grid-template-columns: 1fr; }
-  .sidebar { display: none; }
-  .topnav { display: none; }
-}
-
-@media (max-width: 640px) {
-  .row2, .row3 { grid-template-columns: 1fr; }
-  .topbar { padding: 12px; }
-  .workspace { padding: 12px; }
-}
-
 /* --------- TEMPLATE VARIANTS --------- */
 .paper[data-template="modern"] {
   border: 2px solid #dbeafe;

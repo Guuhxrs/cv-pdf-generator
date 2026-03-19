@@ -20,286 +20,279 @@ content="default-src 'self';
 </head>
 
 <body>
-<main class="app container no-print">
-<header class="top">
-<div>
-<h1>Gerador de Currículo em PDF</h1>
-<p>Preencha os campos e gere um <strong>PDF profissional</strong>.</p>
-<p class="hint">
-<strong>Atenção:</strong> os dados podem ser salvos automaticamente <em>neste dispositivo</em>.
-Use <strong>Limpar dados</strong> se estiver em um celular/computador compartilhado.
-</p>
-</div>
+  <main class="app container no-print">
+    <header class="top">
+      <div>
+        <h1>Gerador de Currículo em PDF</h1>
+        <p>Preencha os campos e gere um <strong>PDF profissional</strong>.</p>
+        <p class="hint">
+          <strong>Atenção:</strong> os dados podem ser salvos automaticamente <em>neste dispositivo</em>.
+          Use <strong>Limpar dados</strong> se estiver em um celular/computador compartilhado.
+        </p>
+      </div>
 
-<div class="actions">
-<button id="btnPreview" type="button">Atualizar prévia</button>
-<button id="btnPdf" type="button" class="primary">Gerar PDF</button>
-<button id="btnClear" type="button" class="danger">Limpar dados</button>
-</div>
-</header>
+      <div class="actions">
+        <button id="btnPreview" type="button">Atualizar prévia</button>
+        <button id="btnPdf" type="button" class="primary">Gerar PDF</button>
+        <button id="btnClear" type="button" class="danger">Limpar dados</button>
+      </div>
+    </header>
 
-<section class="grid">
-<!-- FORMULÁRIO -->
-<div class="card">
-<h2>Informações</h2>
+    <section class="grid">
+      <!-- FORMULÁRIO -->
+      <div class="card">
+        <h2>Informações</h2>
 
-<label>Modelo do currículo
-<select id="template" aria-label="Selecionar modelo de currículo">
-<option value="classic">Clássico</option>
-<option value="modern">Moderno</option>
-<option value="minimal">Minimalista</option>
-<option value="corporate">Corporativo</option>
-<option value="creative">Criativo</option>
-</select>
-</label>
+        <label>Modelo do currículo
+          <select id="template" aria-label="Selecionar modelo de currículo">
+            <option value="classic">Clássico</option>
+            <option value="modern">Moderno</option>
+            <option value="minimal">Minimalista</option>
+            <option value="corporate">Corporativo</option>
+            <option value="creative">Criativo</option>
+          </select>
+        </label>
 
-<label>Nome completo
-<input
-id="name"
-placeholder="Ex: Nome Sobrenome"
-autocomplete="name"
-inputmode="text"
-maxlength="60"
-pattern="^[A-Za-zÀ-ÖØ-öø-ÿ\s'.-]{2,60}$"
-title="Use apenas letras e espaços (2 a 60 caracteres)."
-/>
-</label>
+        <label>Nome completo
+          <input
+            id="name"
+            placeholder="Ex: Nome Sobrenome"
+            autocomplete="name"
+            inputmode="text"
+            maxlength="60"
+            pattern="^[A-Za-zÀ-ÖØ-öø-ÿ\s'.-]{2,60}$"
+            title="Use apenas letras e espaços (2 a 60 caracteres)."
+          />
+        </label>
 
-<div class="row2">
-<label>Telefone (opcional)
-<input
-id="phone"
-placeholder="Ex: (00) 90000-0000"
-inputmode="tel"
-maxlength="20"
-pattern="^[0-9()\s+-]{8,20}$"
-title="Use apenas números e símbolos de telefone: ( ) + - e espaços."
-/>
-</label>
+        <div class="row2">
+          <label>Telefone (opcional)
+            <input
+              id="phone"
+              placeholder="Ex: (00) 90000-0000"
+              inputmode="tel"
+              maxlength="20"
+              pattern="^[0-9()\s+-]{8,20}$"
+              title="Use apenas números e símbolos de telefone: ( ) + - e espaços."
+            />
+          </label>
 
-<label>Email (opcional)
-<input
-id="email"
-placeholder="Ex: email@exemplo.com"
-inputmode="email"
-maxlength="80"
-pattern="^[^\s@]+@[^\s@]+\.[^\s@]{2,}$"
-title="Digite um e-mail válido."
-/>
-</label>
-</div>
+          <label>Email (opcional)
+            <input
+              id="email"
+              placeholder="Ex: email@exemplo.com"
+              inputmode="email"
+              maxlength="80"
+              pattern="^[^\s@]+@[^\s@]+\.[^\s@]{2,}$"
+              title="Digite um e-mail válido."
+            />
+          </label>
+        </div>
 
-<div class="row2">
-<label>GitHub (opcional)
-<input
-id="github"
-placeholder="Ex: github.com/usuario"
-inputmode="url"
-maxlength="120"
-pattern="^(https?:\/\/)?(www\.)?github\.com\/[A-Za-z0-9-]{1,39}\/?$"
-title="Use um link/usuário do GitHub válido. Ex: github.com/usuario"
-/>
-</label>
+        <div class="row2">
+          <label>GitHub (opcional)
+            <input
+              id="github"
+              placeholder="Ex: github.com/usuario"
+              inputmode="url"
+              maxlength="120"
+              pattern="^(https?:\/\/)?(www\.)?github\.com\/[A-Za-z0-9-]{1,39}\/?$"
+              title="Use um link/usuário do GitHub válido. Ex: github.com/usuario"
+            />
+          </label>
 
-<label>LinkedIn (opcional)
-<input
-id="linkedin"
-placeholder="Ex: linkedin.com/in/usuario"
-inputmode="url"
-maxlength="140"
-pattern="^(https?:\/\/)?(www\.)?linkedin\.com\/in\/[A-Za-z0-9-_%]+\/?$"
-title="Use um link do LinkedIn válido. Ex: linkedin.com/in/seu-perfil"
-/>
-</label>
-</div>
+          <label>LinkedIn (opcional)
+            <input
+              id="linkedin"
+              placeholder="Ex: linkedin.com/in/usuario"
+              inputmode="url"
+              maxlength="140"
+              pattern="^(https?:\/\/)?(www\.)?linkedin\.com\/in\/[A-Za-z0-9-_%]+\/?$"
+              title="Use um link do LinkedIn válido. Ex: linkedin.com/in/seu-perfil"
+            />
+          </label>
+        </div>
 
-<label><span id="labelObjective">OBJETIVOS</span>
-<textarea
-id="objective"
-rows="5"
-maxlength="800"
-placeholder="Ex: Atuar na área de Banco de Dados ou Back-end..."
-></textarea>
-</label>
+        <label><span id="labelObjective">OBJETIVOS</span>
+          <textarea
+            id="objective"
+            rows="5"
+            maxlength="800"
+            placeholder="Ex: Atuar na área de Banco de Dados ou Back-end..."
+          ></textarea>
+        </label>
 
-<label><span id="labelSkills">COMPETÊNCIAS (1 por linha)</span>
-<textarea
-id="skills"
-rows="7"
-maxlength="600"
-placeholder="Python&#10;SQL&#10;MySQL&#10;Git&#10;Modelagem de dados"
-></textarea>
-</label>
+        <label><span id="labelSkills">COMPETÊNCIAS (1 por linha)</span>
+          <textarea
+            id="skills"
+            rows="7"
+            maxlength="600"
+            placeholder="Python&#10;SQL&#10;MySQL&#10;Git&#10;Modelagem de dados"
+          ></textarea>
+        </label>
 
-<label><span id="labelExperience">EXPERIÊNCIA / DESTAQUES</span>
-<textarea
-id="experience"
-rows="5"
-maxlength="900"
-placeholder="Descreva resultados, entregas e experiências principais..."
-></textarea>
-</label>
+        <label><span id="labelExperience">EXPERIÊNCIA / DESTAQUES</span>
+          <textarea
+            id="experience"
+            rows="5"
+            maxlength="900"
+            placeholder="Descreva resultados, entregas e experiências principais..."
+          ></textarea>
+        </label>
 
-<label><span id="labelProjects">PROJETOS (1 por linha)</span>
-<textarea
-id="projects"
-rows="4"
-maxlength="700"
-placeholder="Projeto A — breve descrição&#10;Projeto B — breve descrição"
-></textarea>
-</label>
+        <label><span id="labelProjects">PROJETOS (1 por linha)</span>
+          <textarea
+            id="projects"
+            rows="4"
+            maxlength="700"
+            placeholder="Projeto A — breve descrição&#10;Projeto B — breve descrição"
+          ></textarea>
+        </label>
 
-<label>FORMAÇÃO — Instituição
-<input
-id="eduInstitution"
-placeholder="Ex: Instituição"
-maxlength="80"
-pattern="^[A-Za-zÀ-ÖØ-öø-ÿ0-9\s'.-]{2,80}$"
-title="Use letras, números, espaços e . ' -"
-/>
-</label>
+        <label>FORMAÇÃO — Instituição
+          <input
+            id="eduInstitution"
+            placeholder="Ex: Instituição"
+            maxlength="80"
+            pattern="^[A-Za-zÀ-ÖØ-öø-ÿ0-9\s'.-]{2,80}$"
+            title="Use letras, números, espaços e . ' -"
+          />
+        </label>
 
-<label>FORMAÇÃO — Curso
-<input
-id="eduCourse"
-placeholder="Ex: Técnico em Informática"
-maxlength="80"
-pattern="^[A-Za-zÀ-ÖØ-öø-ÿ0-9\s'.-]{2,80}$"
-title="Use letras, números, espaços e . ' -"
-/>
-</label>
+        <label>FORMAÇÃO — Curso
+          <input
+            id="eduCourse"
+            placeholder="Ex: Técnico em Informática"
+            maxlength="80"
+            pattern="^[A-Za-zÀ-ÖØ-öø-ÿ0-9\s'.-]{2,80}$"
+            title="Use letras, números, espaços e . ' -"
+          />
+        </label>
 
-<label>FORMAÇÃO — Período
-<input
-id="eduPeriod"
-placeholder="Ex: 2023 - 2026"
-maxlength="25"
-pattern="^[0-9\s\-–/]{4,25}$"
-title="Use apenas números, espaços, -, –, /"
-/>
-</label>
+        <label>FORMAÇÃO — Período
+          <input
+            id="eduPeriod"
+            placeholder="Ex: 2023 - 2026"
+            maxlength="25"
+            pattern="^[0-9\s\-–/]{4,25}$"
+            title="Use apenas números, espaços, -, –, /"
+          />
+        </label>
 
-<label>FORMAÇÃO — Descrição
-<textarea
-id="eduDescription"
-rows="5"
-maxlength="800"
-placeholder="Descreva brevemente a formação..."
-></textarea>
-</label>
+        <label>FORMAÇÃO — Descrição
+          <textarea
+            id="eduDescription"
+            rows="5"
+            maxlength="800"
+            placeholder="Descreva brevemente a formação..."
+          ></textarea>
+        </label>
 
-<label>CERTIFICADOS E LICENÇAS (1 por linha)
-<textarea
-id="certs"
-rows="4"
-maxlength="600"
-placeholder="Curso — Plataforma/Instituição&#10;Certificação — Emissor"
-></textarea>
-</label>
+        <label>CERTIFICADOS E LICENÇAS (1 por linha)
+          <textarea
+            id="certs"
+            rows="4"
+            maxlength="600"
+            placeholder="Curso — Plataforma/Instituição&#10;Certificação — Emissor"
+          ></textarea>
+        </label>
 
-<label>IDIOMAS (1 por linha: Idioma - Nível)
-<textarea
-id="languages"
-rows="3"
-maxlength="200"
-placeholder="Português - Nativo&#10;Inglês - Básico"
-></textarea>
-</label>
+        <label>IDIOMAS (1 por linha: Idioma - Nível)
+          <textarea
+            id="languages"
+            rows="3"
+            maxlength="200"
+            placeholder="Português - Nativo&#10;Inglês - Básico"
+          ></textarea>
+        </label>
 
-<label>Portfólio/Website (opcional)
-<input
-id="portfolio"
-placeholder="Ex: meuportfolio.dev"
-inputmode="url"
-maxlength="140"
-/>
-</label>
-</div>
+        <label>Portfólio/Website (opcional)
+          <input
+            id="portfolio"
+            placeholder="Ex: meuportfolio.dev"
+            inputmode="url"
+            maxlength="140"
+          />
+        </label>
+      </div>
 
-<!-- PRÉVIA -->
-<div class="card">
-<div class="row">
-<h2>Prévia do PDF</h2>
-<span id="status" class="status">Pronto ✅</span>
-</div>
+      <!-- PRÉVIA -->
+      <div class="card">
+        <div class="row">
+          <h2>Prévia do PDF</h2>
+          <span id="status" class="status">Pronto ✅</span>
+        </div>
 
-<section id="pdfArea" class="paper" aria-label="Prévia do documento">
-<div class="paper-header">
-<div class="paper-title">
-<h3 id="pName">Nome do usuário</h3>
-</div>
-<div class="paper-contact" id="pContact"></div>
-</div>
+        <section id="pdfArea" class="paper" aria-label="Prévia do documento">
+          <div class="paper-header">
+            <div class="paper-title">
+              <h3 id="pName">Nome do usuário</h3>
+            </div>
+            <div class="paper-contact" id="pContact"></div>
+          </div>
 
-<div class="divider"></div>
+          <div class="divider"></div>
 
-<div class="paper-body">
-<div class="block" id="blockObjective">
-<h4 id="hObjective">OBJETIVOS</h4>
-<p id="pObjective" class="text">Preencha seus objetivos para aparecer aqui.</p>
-</div>
+          <div class="paper-body">
+            <div class="block" id="blockObjective">
+              <h4 id="hObjective">OBJETIVOS</h4>
+              <p id="pObjective" class="text">Preencha seus objetivos para aparecer aqui.</p>
+            </div>
 
-<div class="block" id="blockSkills">
-<h4 id="hSkills">COMPETÊNCIAS</h4>
-<ul id="pSkills" class="bullets"></ul>
-</div>
+            <div class="block" id="blockSkills">
+              <h4 id="hSkills">COMPETÊNCIAS</h4>
+              <ul id="pSkills" class="bullets"></ul>
+            </div>
 
-<div class="block" id="blockEducation">
-<h4 id="hEducation">FORMAÇÃO</h4>
-<div class="edu">
-<div class="edu-head">
-<strong id="pEduInstitution">Instituição</strong>
-<span id="pEduPeriod" class="edu-period">Período</span>
-</div>
-<div id="pEduCourse" class="edu-course">Curso</div>
-<p id="pEduDescription" class="edu-desc">Descrição da formação.</p>
-</div>
-</div>
+            <div class="block" id="blockEducation">
+              <h4 id="hEducation">FORMAÇÃO</h4>
+              <div class="edu">
+                <div class="edu-head">
+                  <strong id="pEduInstitution">Instituição</strong>
+                  <span id="pEduPeriod" class="edu-period">Período</span>
+                </div>
+                <div id="pEduCourse" class="edu-course">Curso</div>
+                <p id="pEduDescription" class="edu-desc">Descrição da formação.</p>
+              </div>
+            </div>
 
-<div class="two">
-<div class="block" id="blockCerts">
-<h4 id="hCerts">CERTIFICADOS E LICENÇAS</h4>
-<ul id="pCerts" class="bullets"></ul>
-</div>
+            <div class="two">
+              <div class="block" id="blockCerts">
+                <h4 id="hCerts">CERTIFICADOS E LICENÇAS</h4>
+                <ul id="pCerts" class="bullets"></ul>
+              </div>
 
-<div class="block" id="blockLanguages">
-<h4 id="hLanguages">IDIOMAS</h4>
-<ul id="pLanguages" class="bullets"></ul>
-</div>
-</div>
+              <div class="block" id="blockLanguages">
+                <h4 id="hLanguages">IDIOMAS</h4>
+                <ul id="pLanguages" class="bullets"></ul>
+              </div>
+            </div>
 
-<div class="two" id="templateExtraSections">
-<div class="block" id="blockExperience">
-<h4 id="hExperience">EXPERIÊNCIA</h4>
-<p id="pExperience" class="text">Adicione sua experiência principal.</p>
-</div>
+            <div class="two" id="templateExtraSections">
+              <div class="block" id="blockExperience">
+                <h4 id="hExperience">EXPERIÊNCIA</h4>
+                <p id="pExperience" class="text">Adicione sua experiência principal.</p>
+              </div>
 
-<div class="block" id="blockProjects">
-<h4 id="hProjects">PROJETOS</h4>
-<ul id="pProjects" class="bullets"></ul>
-</div>
-</div>
-</div>
+              <div class="block" id="blockProjects">
+                <h4 id="hProjects">PROJETOS</h4>
+                <ul id="pProjects" class="bullets"></ul>
+              </div>
+            </div>
+          </div>
 
-<div class="paper-footer">
-            <small>Documento gerado no navegador • Exportação via impressão (Salvar como PDF)</small>
+          <div class="paper-footer">
             <small>Documento gerado no navegador • Exportação direta para PDF</small>
-</div>
-</section>
+          </div>
+        </section>
 
-<small class="hint">
-          Ao clicar em <strong>Gerar PDF</strong>, o navegador abrirá a tela de impressão.
-          Selecione <strong>Salvar como PDF</strong>.
+        <small class="hint">
           Ao clicar em <strong>Gerar PDF</strong>, o arquivo será baixado diretamente em PDF.
-</small>
-</div>
-</section>
-</main>
+        </small>
+      </div>
+    </section>
+  </main>
 
-  <section class="print-only">
-    <section id="pdfAreaPrint" class="paper" aria-label="Documento para impressão"></section>
-  </section>
-
-<script src="script.js"></script>
-<script src="template-enhancements.js"></script>
+  <script src="script.js"></script>
+  <script src="template-enhancements.js"></script>
 </body>

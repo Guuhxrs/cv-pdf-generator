@@ -30,7 +30,7 @@ Gerador de currículo em PDF feito com **HTML, CSS e JavaScript puro**, com foco
 
 - `index.html` → estrutura da aplicação e layout da prévia
 - `style.css` → estilos base da interface
-- `script.js` → lógica principal (formulário, preview, exportação em PDF, validações)
+- `script.js` → lógica principal (formulário, preview, exportação de PDF, validações)
 - `template-enhancements.css` → estilos avançados por tipo de currículo
 - `template-enhancements.js` → comportamento dinâmico por template (labels, seções, render extra)
 
