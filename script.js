@@ -490,11 +490,19 @@ function clearData() {
 }
 
 // ── GENERATE PDF ──
-function generatePDF() {
-  const { lines, fileName } = buildPdfDataFromState();
-  const pdfBytes = createPdfDocument(lines);
-  downloadPdf(pdfBytes, fileName);
-  showToast('PDF gerado com sucesso.');
+async function generatePDF() {
+  const cvElement = document.getElementById('cv-doc');
+  const fileName = makePdfFileName(state.fullName);
+
+  try {
+    const html2pdf = await loadHtml2PdfLibrary();
+    await exportPreviewAsPdf(html2pdf, cvElement, fileName);
+    showToast('PDF gerado igual à pré-visualização.');
+  } catch (error) {
+    console.error('Falha ao gerar PDF com html2pdf:', error);
+    openPrintFallback(cvElement);
+    showToast('Não foi possível baixar automaticamente. Use "Salvar como PDF".');
+  }
 }
 
 // ── TOAST ──
@@ -521,79 +529,88 @@ function initTheme() {
   }
 }
 
-function buildPdfDataFromState() {
-  const lines = [];
+function loadHtml2PdfLibrary() {
+  if (window.html2pdf) return Promise.resolve(window.html2pdf);
+  if (window.__html2pdfLoadingPromise) return window.__html2pdfLoadingPromise;
 
-  lines.push((state.fullName || 'Seu Nome').trim());
-  if (state.jobTitle) lines.push(state.jobTitle.trim());
-  lines.push('');
-
-  if (state.email) lines.push(`E-mail: ${state.email.trim()}`);
-  if (state.phone) lines.push(`Telefone: ${state.phone.trim()}`);
-  if (state.location) lines.push(`Localização: ${state.location.trim()}`);
-  if (state.linkedin) lines.push(`LinkedIn/Site: ${state.linkedin.trim()}`);
-  lines.push('');
-
-  pushSection(lines, 'RESUMO', state.summary ? [state.summary] : []);
-  pushSection(lines, 'COMPETÊNCIAS', state.tags, true);
-
-  const expLines = [];
-  state.experience.forEach((item) => {
-    if (!item.company) return;
-    expLines.push(`${item.company}${item.period ? ` (${item.period})` : ''}`);
-    if (item.role) expLines.push(`Cargo: ${item.role}`);
-    if (item.desc) expLines.push(item.desc);
-    expLines.push('');
+  window.__html2pdfLoadingPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    script.onload = () => resolve(window.html2pdf);
+    script.onerror = reject;
+    document.head.appendChild(script);
   });
-  pushSection(lines, 'EXPERIÊNCIA', expLines.filter(Boolean));
 
-  const eduLines = [];
-  state.education.forEach((item) => {
-    if (!item.institution) return;
-    const end = item.current ? 'Cursando' : (item.end || '');
-    const period = item.start ? `${item.start}${end ? ` — ${end}` : ''}` : '';
-    eduLines.push(`${item.institution}${period ? ` (${period})` : ''}`);
-    if (item.course) eduLines.push(item.course);
-    eduLines.push('');
-  });
-  pushSection(lines, 'FORMAÇÃO', eduLines.filter(Boolean));
-
-  const skillLines = state.skills
-    .filter((item) => item.name)
-    .map((item) => `${item.name} (${item.level || 0}%)`);
-  pushSection(lines, 'HABILIDADES', skillLines, true);
-
-  const certLines = state.certs
-    .filter((item) => item.name)
-    .map((item) => `${item.name}${item.issuer ? ` — ${item.issuer}` : ''}${item.year ? ` (${item.year})` : ''}`);
-  pushSection(lines, 'CERTIFICADOS', certLines, true);
-
-  const projectLines = [];
-  state.projects.forEach((item) => {
-    if (!item.name) return;
-    projectLines.push(item.name);
-    if (item.link) projectLines.push(`Link: ${item.link}`);
-    if (item.desc) projectLines.push(item.desc);
-    projectLines.push('');
-  });
-  pushSection(lines, 'PROJETOS', projectLines.filter(Boolean));
-
-  return {
-    lines,
-    fileName: makePdfFileName(state.fullName)
-  };
+  return window.__html2pdfLoadingPromise;
 }
 
-function pushSection(targetLines, title, contentLines, asBullets = false) {
-  if (!contentLines || contentLines.length === 0) return;
+async function exportPreviewAsPdf(html2pdf, cvElement, fileName) {
+  const clone = cvElement.cloneNode(true);
+  const rect = cvElement.getBoundingClientRect();
 
-  targetLines.push(title);
-  if (asBullets) {
-    contentLines.forEach((line) => targetLines.push(`• ${line}`));
-  } else {
-    contentLines.forEach((line) => targetLines.push(line));
+  clone.style.transform = 'none';
+  clone.style.maxWidth = `${rect.width}px`;
+  clone.style.width = `${rect.width}px`;
+  clone.style.margin = '0';
+  clone.style.boxShadow = 'none';
+
+  const tempWrapper = document.createElement('div');
+  tempWrapper.style.position = 'fixed';
+  tempWrapper.style.left = '-99999px';
+  tempWrapper.style.top = '0';
+  tempWrapper.style.padding = '0';
+  tempWrapper.style.background = 'transparent';
+  tempWrapper.appendChild(clone);
+  document.body.appendChild(tempWrapper);
+
+  const pxToMm = 0.264583;
+  const pdfFormat = [rect.width * pxToMm, rect.height * pxToMm];
+
+  try {
+    await html2pdf().set({
+      margin: 0,
+      filename: fileName,
+      image: { type: 'jpeg', quality: 1 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: null },
+      jsPDF: { unit: 'mm', format: pdfFormat, orientation: 'portrait' }
+    }).from(clone).save();
+  } finally {
+    tempWrapper.remove();
   }
-  targetLines.push('');
+}
+
+function openPrintFallback(cvElement) {
+  const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=900,height=1200');
+  if (!printWindow) throw new Error('Popup bloqueado.');
+
+  const isDarkMode = document.documentElement.classList.contains('dark');
+  const clone = cvElement.cloneNode(true);
+  clone.style.transform = 'none';
+
+  printWindow.document.write(`
+    <!doctype html>
+    <html class="${isDarkMode ? 'dark' : ''}">
+      <head>
+        <meta charset="utf-8" />
+        <title>Exportar PDF</title>
+        <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet" />
+        <link rel="stylesheet" href="style.css" />
+        <style>
+          body { margin: 0; padding: 16px; background: #fff; display:flex; justify-content:center; }
+          .cv-doc { box-shadow: none !important; max-width: none; width: fit-content; }
+        </style>
+      </head>
+      <body></body>
+    </html>
+  `);
+
+  printWindow.document.body.appendChild(clone);
+  printWindow.document.close();
+
+  printWindow.onload = () => {
+    printWindow.focus();
+    printWindow.print();
+  };
 }
 
 function makePdfFileName(name) {
@@ -608,103 +625,6 @@ function makePdfFileName(name) {
   return `${safe || 'curriculo'}-${new Date().toISOString().slice(0, 10)}.pdf`;
 }
 
-function createPdfDocument(lines) {
-  const startY = 800;
-  const bottomMargin = 50;
-  const lineHeight = 16;
-  const pages = [];
-  let currentPage = [];
-  let y = startY;
-
-  lines.forEach((rawLine) => {
-    if (y < bottomMargin) {
-      pages.push(currentPage);
-      currentPage = [];
-      y = startY;
-    }
-
-    currentPage.push(`BT /F1 11 Tf 40 ${y} Td (${escapePdfText(rawLine || ' ')}) Tj ET`);
-    y -= lineHeight;
-  });
-
-  if (currentPage.length === 0) {
-    currentPage.push('BT /F1 11 Tf 40 800 Td (Currículo) Tj ET');
-  }
-  pages.push(currentPage);
-
-  return buildPdfBytes(pages);
-}
-
-function buildPdfBytes(pageStreams) {
-  const objects = {};
-  let nextId = 1;
-
-  const fontId = nextId++;
-  objects[fontId] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
-
-  const contentIds = pageStreams.map(() => nextId++);
-  const pageIds = pageStreams.map(() => nextId++);
-  const pagesId = nextId++;
-  const catalogId = nextId++;
-
-  pageStreams.forEach((commands, index) => {
-    const stream = commands.join('\n');
-    objects[contentIds[index]] = `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`;
-  });
-
-  objects[pagesId] = `<< /Type /Pages /Count ${pageIds.length} /Kids [${pageIds.map((id) => `${id} 0 R`).join(' ')}] >>`;
-
-  pageIds.forEach((pageId, index) => {
-    objects[pageId] = [
-      '<< /Type /Page',
-      `/Parent ${pagesId} 0 R`,
-      '/MediaBox [0 0 595 842]',
-      `/Resources << /Font << /F1 ${fontId} 0 R >> >>`,
-      `/Contents ${contentIds[index]} 0 R`,
-      '>>'
-    ].join(' ');
-  });
-
-  objects[catalogId] = `<< /Type /Catalog /Pages ${pagesId} 0 R >>`;
-
-  let pdf = '%PDF-1.4\n';
-  const offsets = [0];
-  const maxId = catalogId;
-
-  for (let id = 1; id <= maxId; id += 1) {
-    offsets[id] = pdf.length;
-    pdf += `${id} 0 obj\n${objects[id]}\nendobj\n`;
-  }
-
-  const xrefStart = pdf.length;
-  pdf += `xref\n0 ${maxId + 1}\n`;
-  pdf += '0000000000 65535 f \n';
-  for (let id = 1; id <= maxId; id += 1) {
-    pdf += `${String(offsets[id]).padStart(10, '0')} 00000 n \n`;
-  }
-
-  pdf += `trailer\n<< /Size ${maxId + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
-  return new TextEncoder().encode(pdf);
-}
-
-function escapePdfText(text) {
-  return (text || '')
-    .replace(/\\/g, '\\\\')
-    .replace(/\(/g, '\\(')
-    .replace(/\)/g, '\\)');
-}
-
-function downloadPdf(bytes, fileName) {
-  const blob = new Blob([bytes], { type: 'application/pdf' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
 
 // ── START ──
 initTheme();
