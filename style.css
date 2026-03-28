@@ -842,3 +842,164 @@ html.dark .cv-tag         { background: #2A2723; color: #9A9590; }
 ::-webkit-scrollbar-track  { background: transparent; }
 ::-webkit-scrollbar-thumb  { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #ccc; }
+
+/* ── RESPONSIVE (TABLET/MOBILE) ── */
+@media (max-width: 1100px) {
+  .topnav {
+    height: auto;
+    min-height: 52px;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    padding: 10px 14px;
+  }
+
+  .topnav-links {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .topnav-actions {
+    margin-left: auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .workspace {
+    flex-direction: column;
+    overflow: auto;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .sidebar-label,
+  .sidebar-version,
+  .sidebar-bottom {
+    display: none;
+  }
+
+  .sidebar-item {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 12px;
+  }
+
+  .form-panel,
+  .preview-panel {
+    width: 100%;
+    max-width: none;
+    border: none;
+  }
+
+  .form-panel {
+    max-height: none;
+    overflow: visible;
+    padding: 16px;
+  }
+
+  .preview-panel {
+    border-top: 1px solid var(--border);
+    min-height: 420px;
+  }
+
+  .preview-scroll {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 700px) {
+  .topnav {
+    gap: 8px;
+    padding: 10px 10px 8px;
+  }
+
+  .brand {
+    font-size: 14px;
+  }
+
+  .topnav-links a {
+    font-size: 12px;
+    padding: 5px 9px;
+  }
+
+  .topnav-actions {
+    gap: 6px;
+  }
+
+  .btn-clear,
+  .btn-pdf {
+    padding: 7px 10px;
+    font-size: 11px;
+  }
+
+  .topnav-icon,
+  .avatar {
+    width: 30px;
+    height: 30px;
+  }
+
+  .form-panel {
+    padding: 12px;
+  }
+
+  .section-title {
+    font-size: 16px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .entry-card {
+    padding: 10px;
+  }
+
+  .btn-update-wrap {
+    position: static;
+    padding-top: 14px;
+    background: transparent;
+  }
+
+  .preview-header {
+    padding: 10px 12px;
+  }
+
+  .preview-title {
+    font-size: 12px;
+  }
+
+  .preview-subtitle {
+    font-size: 10px;
+  }
+
+  .preview-scroll {
+    padding: 10px;
+  }
+
+  .cv-doc {
+    max-width: 100%;
+    min-height: 360px;
+    padding: 22px 18px;
+  }
+
+  .toast {
+    right: 10px;
+    left: 10px;
+    bottom: 12px;
+    text-align: center;
+  }
+}
