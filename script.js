@@ -490,11 +490,18 @@ function clearData() {
 }
 
 // ── GENERATE PDF ──
-function generatePDF() {
-  const { lines, fileName } = buildPdfDataFromState();
-  const pdfBytes = createPdfDocument(lines);
-  downloadPdf(pdfBytes, fileName);
-  showToast('PDF gerado com sucesso.');
+async function generatePDF() {
+  const fileName = makePdfFileName(state.fullName);
+
+  try {
+    const jsPDF = await loadJsPdfLibrary();
+    const pdf = createStandardResumePdf(jsPDF, state);
+    pdf.save(fileName);
+    showToast('PDF gerado no padrão de currículo.');
+  } catch (error) {
+    console.error('Falha ao gerar PDF:', error);
+    showToast('Não foi possível gerar o PDF agora.');
+  }
 }
 
 // ── TOAST ──
@@ -521,79 +528,198 @@ function initTheme() {
   }
 }
 
-function buildPdfDataFromState() {
-  const lines = [];
+function loadJsPdfLibrary() {
+  if (window.jspdf?.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+  if (window.__jspdfLoadingPromise) return window.__jspdfLoadingPromise;
 
-  lines.push((state.fullName || 'Seu Nome').trim());
-  if (state.jobTitle) lines.push(state.jobTitle.trim());
-  lines.push('');
-
-  if (state.email) lines.push(`E-mail: ${state.email.trim()}`);
-  if (state.phone) lines.push(`Telefone: ${state.phone.trim()}`);
-  if (state.location) lines.push(`Localização: ${state.location.trim()}`);
-  if (state.linkedin) lines.push(`LinkedIn/Site: ${state.linkedin.trim()}`);
-  lines.push('');
-
-  pushSection(lines, 'RESUMO', state.summary ? [state.summary] : []);
-  pushSection(lines, 'COMPETÊNCIAS', state.tags, true);
-
-  const expLines = [];
-  state.experience.forEach((item) => {
-    if (!item.company) return;
-    expLines.push(`${item.company}${item.period ? ` (${item.period})` : ''}`);
-    if (item.role) expLines.push(`Cargo: ${item.role}`);
-    if (item.desc) expLines.push(item.desc);
-    expLines.push('');
+  window.__jspdfLoadingPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    script.onload = () => resolve(window.jspdf.jsPDF);
+    script.onerror = reject;
+    document.head.appendChild(script);
   });
-  pushSection(lines, 'EXPERIÊNCIA', expLines.filter(Boolean));
 
-  const eduLines = [];
-  state.education.forEach((item) => {
-    if (!item.institution) return;
-    const end = item.current ? 'Cursando' : (item.end || '');
-    const period = item.start ? `${item.start}${end ? ` — ${end}` : ''}` : '';
-    eduLines.push(`${item.institution}${period ? ` (${period})` : ''}`);
-    if (item.course) eduLines.push(item.course);
-    eduLines.push('');
-  });
-  pushSection(lines, 'FORMAÇÃO', eduLines.filter(Boolean));
-
-  const skillLines = state.skills
-    .filter((item) => item.name)
-    .map((item) => `${item.name} (${item.level || 0}%)`);
-  pushSection(lines, 'HABILIDADES', skillLines, true);
-
-  const certLines = state.certs
-    .filter((item) => item.name)
-    .map((item) => `${item.name}${item.issuer ? ` — ${item.issuer}` : ''}${item.year ? ` (${item.year})` : ''}`);
-  pushSection(lines, 'CERTIFICADOS', certLines, true);
-
-  const projectLines = [];
-  state.projects.forEach((item) => {
-    if (!item.name) return;
-    projectLines.push(item.name);
-    if (item.link) projectLines.push(`Link: ${item.link}`);
-    if (item.desc) projectLines.push(item.desc);
-    projectLines.push('');
-  });
-  pushSection(lines, 'PROJETOS', projectLines.filter(Boolean));
-
-  return {
-    lines,
-    fileName: makePdfFileName(state.fullName)
-  };
+  return window.__jspdfLoadingPromise;
 }
 
-function pushSection(targetLines, title, contentLines, asBullets = false) {
-  if (!contentLines || contentLines.length === 0) return;
+function createStandardResumePdf(jsPDF, resumeState) {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 18;
+  const contentWidth = pageWidth - margin * 2;
+  const lineGap = 5;
+  const sectionGap = 6;
+  const itemGap = 4;
+  let y = 18;
 
-  targetLines.push(title);
-  if (asBullets) {
-    contentLines.forEach((line) => targetLines.push(`• ${line}`));
-  } else {
-    contentLines.forEach((line) => targetLines.push(line));
+  const ensureSpace = (needed = 10) => {
+    if (y + needed <= pageHeight - margin) return;
+    doc.addPage();
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, 0, pageWidth, pageHeight, 'F');
+    y = margin;
+  };
+
+  const drawSectionTitle = (title) => {
+    ensureSpace(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(30, 30, 30);
+    doc.text(title.toUpperCase(), margin, y);
+    y += 2;
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.3);
+    doc.line(margin, y + 1.2, pageWidth - margin, y + 1.2);
+    y += sectionGap;
+  };
+
+  const drawParagraph = (text, options = {}) => {
+    if (!text) return;
+    const fontSize = options.fontSize || 10;
+    const style = options.style || 'normal';
+    const color = options.color || [50, 50, 50];
+    const gap = options.gap || lineGap;
+    doc.setFont('helvetica', style);
+    doc.setFontSize(fontSize);
+    doc.setTextColor(...color);
+    const lines = doc.splitTextToSize(text, contentWidth);
+    ensureSpace(lines.length * gap + 2);
+    doc.text(lines, margin, y);
+    y += lines.length * gap;
+  };
+
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+  const name = (resumeState.fullName || 'Seu Nome').trim();
+  const role = (resumeState.jobTitle || 'Cargo').trim();
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.setTextColor(20, 20, 20);
+  doc.text(name, pageWidth / 2, y, { align: 'center' });
+  y += 8;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.setTextColor(90, 90, 90);
+  doc.text(role, pageWidth / 2, y, { align: 'center' });
+  y += 7;
+
+  const contacts = [resumeState.email, resumeState.phone, resumeState.location, resumeState.linkedin]
+    .map((value) => (value || '').trim())
+    .filter(Boolean);
+  if (contacts.length) {
+    doc.setFontSize(9.5);
+    doc.text(contacts.join('  |  '), pageWidth / 2, y, { align: 'center' });
+    y += 6;
   }
-  targetLines.push('');
+
+  doc.setDrawColor(180, 180, 180);
+  doc.setLineWidth(0.35);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 8;
+
+  if (resumeState.summary?.trim()) {
+    drawSectionTitle('Resumo Profissional');
+    drawParagraph(resumeState.summary.trim(), { fontSize: 10, gap: 4.7 });
+    y += 2;
+  }
+
+  const experiences = resumeState.experience.filter((item) => item.company?.trim());
+  if (experiences.length) {
+    drawSectionTitle('Experiência Profissional');
+    experiences.forEach((item) => {
+      ensureSpace(16);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10.5);
+      doc.setTextColor(25, 25, 25);
+      doc.text(item.company.trim(), margin, y);
+
+      if (item.period?.trim()) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9.5);
+        doc.setTextColor(95, 95, 95);
+        doc.text(item.period.trim(), pageWidth - margin, y, { align: 'right' });
+      }
+      y += lineGap;
+
+      if (item.role?.trim()) {
+        drawParagraph(item.role.trim(), { fontSize: 9.8, style: 'italic', color: [70, 70, 70], gap: 4.5 });
+      }
+      if (item.desc?.trim()) {
+        drawParagraph(item.desc.trim(), { fontSize: 9.6, gap: 4.4, color: [55, 55, 55] });
+      }
+      y += itemGap;
+    });
+  }
+
+  const education = resumeState.education.filter((item) => item.institution?.trim());
+  if (education.length) {
+    drawSectionTitle('Formação Acadêmica');
+    education.forEach((item) => {
+      ensureSpace(14);
+      const end = item.current ? 'Cursando' : (item.end || '').trim();
+      const period = item.start?.trim() ? `${item.start.trim()}${end ? ` — ${end}` : ''}` : '';
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10.2);
+      doc.setTextColor(25, 25, 25);
+      doc.text(item.institution.trim(), margin, y);
+
+      if (period) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9.4);
+        doc.setTextColor(95, 95, 95);
+        doc.text(period, pageWidth - margin, y, { align: 'right' });
+      }
+      y += lineGap;
+
+      if (item.course?.trim()) {
+        drawParagraph(item.course.trim(), { fontSize: 9.6, color: [60, 60, 60], gap: 4.3 });
+      }
+      y += itemGap;
+    });
+  }
+
+  const skills = resumeState.skills.filter((item) => item.name?.trim());
+  if (skills.length) {
+    drawSectionTitle('Habilidades');
+    const text = skills.map((item) => item.name.trim()).join(' • ');
+    drawParagraph(text, { fontSize: 9.8, gap: 4.8 });
+    y += 1;
+  }
+
+  const tags = resumeState.tags.filter(Boolean);
+  if (tags.length) {
+    drawSectionTitle('Competências');
+    drawParagraph(tags.join(' • '), { fontSize: 9.8, gap: 4.8 });
+    y += 1;
+  }
+
+  const certs = resumeState.certs.filter((item) => item.name?.trim());
+  if (certs.length) {
+    drawSectionTitle('Certificados');
+    certs.forEach((item) => {
+      const line = `${item.name.trim()}${item.issuer?.trim() ? ` — ${item.issuer.trim()}` : ''}${item.year?.trim() ? ` (${item.year.trim()})` : ''}`;
+      drawParagraph(`• ${line}`, { fontSize: 9.5, gap: 4.5 });
+    });
+    y += 1;
+  }
+
+  const projects = resumeState.projects.filter((item) => item.name?.trim());
+  if (projects.length) {
+    drawSectionTitle('Projetos');
+    projects.forEach((item) => {
+      drawParagraph(item.name.trim(), { fontSize: 10, style: 'bold', color: [30, 30, 30], gap: 4.7 });
+      if (item.link?.trim()) drawParagraph(item.link.trim(), { fontSize: 9.2, color: [80, 80, 80], gap: 4.2 });
+      if (item.desc?.trim()) drawParagraph(item.desc.trim(), { fontSize: 9.4, color: [55, 55, 55], gap: 4.4 });
+      y += itemGap;
+    });
+  }
+
+  return doc;
 }
 
 function makePdfFileName(name) {
@@ -608,103 +734,6 @@ function makePdfFileName(name) {
   return `${safe || 'curriculo'}-${new Date().toISOString().slice(0, 10)}.pdf`;
 }
 
-function createPdfDocument(lines) {
-  const startY = 800;
-  const bottomMargin = 50;
-  const lineHeight = 16;
-  const pages = [];
-  let currentPage = [];
-  let y = startY;
-
-  lines.forEach((rawLine) => {
-    if (y < bottomMargin) {
-      pages.push(currentPage);
-      currentPage = [];
-      y = startY;
-    }
-
-    currentPage.push(`BT /F1 11 Tf 40 ${y} Td (${escapePdfText(rawLine || ' ')}) Tj ET`);
-    y -= lineHeight;
-  });
-
-  if (currentPage.length === 0) {
-    currentPage.push('BT /F1 11 Tf 40 800 Td (Currículo) Tj ET');
-  }
-  pages.push(currentPage);
-
-  return buildPdfBytes(pages);
-}
-
-function buildPdfBytes(pageStreams) {
-  const objects = {};
-  let nextId = 1;
-
-  const fontId = nextId++;
-  objects[fontId] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
-
-  const contentIds = pageStreams.map(() => nextId++);
-  const pageIds = pageStreams.map(() => nextId++);
-  const pagesId = nextId++;
-  const catalogId = nextId++;
-
-  pageStreams.forEach((commands, index) => {
-    const stream = commands.join('\n');
-    objects[contentIds[index]] = `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`;
-  });
-
-  objects[pagesId] = `<< /Type /Pages /Count ${pageIds.length} /Kids [${pageIds.map((id) => `${id} 0 R`).join(' ')}] >>`;
-
-  pageIds.forEach((pageId, index) => {
-    objects[pageId] = [
-      '<< /Type /Page',
-      `/Parent ${pagesId} 0 R`,
-      '/MediaBox [0 0 595 842]',
-      `/Resources << /Font << /F1 ${fontId} 0 R >> >>`,
-      `/Contents ${contentIds[index]} 0 R`,
-      '>>'
-    ].join(' ');
-  });
-
-  objects[catalogId] = `<< /Type /Catalog /Pages ${pagesId} 0 R >>`;
-
-  let pdf = '%PDF-1.4\n';
-  const offsets = [0];
-  const maxId = catalogId;
-
-  for (let id = 1; id <= maxId; id += 1) {
-    offsets[id] = pdf.length;
-    pdf += `${id} 0 obj\n${objects[id]}\nendobj\n`;
-  }
-
-  const xrefStart = pdf.length;
-  pdf += `xref\n0 ${maxId + 1}\n`;
-  pdf += '0000000000 65535 f \n';
-  for (let id = 1; id <= maxId; id += 1) {
-    pdf += `${String(offsets[id]).padStart(10, '0')} 00000 n \n`;
-  }
-
-  pdf += `trailer\n<< /Size ${maxId + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
-  return new TextEncoder().encode(pdf);
-}
-
-function escapePdfText(text) {
-  return (text || '')
-    .replace(/\\/g, '\\\\')
-    .replace(/\(/g, '\\(')
-    .replace(/\)/g, '\\)');
-}
-
-function downloadPdf(bytes, fileName) {
-  const blob = new Blob([bytes], { type: 'application/pdf' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
 
 // ── START ──
 initTheme();
