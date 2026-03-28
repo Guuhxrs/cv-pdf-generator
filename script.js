@@ -491,17 +491,16 @@ function clearData() {
 
 // ── GENERATE PDF ──
 async function generatePDF() {
-  const cvElement = document.getElementById('cv-doc');
   const fileName = makePdfFileName(state.fullName);
 
   try {
-    const html2pdf = await loadHtml2PdfLibrary();
-    await exportPreviewAsPdf(html2pdf, cvElement, fileName);
-    showToast('PDF gerado igual à pré-visualização.');
+    const jsPDF = await loadJsPdfLibrary();
+    const pdf = createStandardResumePdf(jsPDF, state);
+    pdf.save(fileName);
+    showToast('PDF gerado no padrão de currículo.');
   } catch (error) {
-    console.error('Falha ao gerar PDF com html2pdf:', error);
-    openPrintFallback(cvElement);
-    showToast('Não foi possível baixar automaticamente. Use "Salvar como PDF".');
+    console.error('Falha ao gerar PDF:', error);
+    showToast('Não foi possível gerar o PDF agora.');
   }
 }
 
@@ -529,88 +528,198 @@ function initTheme() {
   }
 }
 
-function loadHtml2PdfLibrary() {
-  if (window.html2pdf) return Promise.resolve(window.html2pdf);
-  if (window.__html2pdfLoadingPromise) return window.__html2pdfLoadingPromise;
+function loadJsPdfLibrary() {
+  if (window.jspdf?.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+  if (window.__jspdfLoadingPromise) return window.__jspdfLoadingPromise;
 
-  window.__html2pdfLoadingPromise = new Promise((resolve, reject) => {
+  window.__jspdfLoadingPromise = new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-    script.onload = () => resolve(window.html2pdf);
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    script.onload = () => resolve(window.jspdf.jsPDF);
     script.onerror = reject;
     document.head.appendChild(script);
   });
 
-  return window.__html2pdfLoadingPromise;
+  return window.__jspdfLoadingPromise;
 }
 
-async function exportPreviewAsPdf(html2pdf, cvElement, fileName) {
-  const clone = cvElement.cloneNode(true);
-  const rect = cvElement.getBoundingClientRect();
+function createStandardResumePdf(jsPDF, resumeState) {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 18;
+  const contentWidth = pageWidth - margin * 2;
+  const lineGap = 5;
+  const sectionGap = 6;
+  const itemGap = 4;
+  let y = 18;
 
-  clone.style.transform = 'none';
-  clone.style.maxWidth = `${rect.width}px`;
-  clone.style.width = `${rect.width}px`;
-  clone.style.margin = '0';
-  clone.style.boxShadow = 'none';
-
-  const tempWrapper = document.createElement('div');
-  tempWrapper.style.position = 'fixed';
-  tempWrapper.style.left = '-99999px';
-  tempWrapper.style.top = '0';
-  tempWrapper.style.padding = '0';
-  tempWrapper.style.background = 'transparent';
-  tempWrapper.appendChild(clone);
-  document.body.appendChild(tempWrapper);
-
-  const pxToMm = 0.264583;
-  const pdfFormat = [rect.width * pxToMm, rect.height * pxToMm];
-
-  try {
-    await html2pdf().set({
-      margin: 0,
-      filename: fileName,
-      image: { type: 'jpeg', quality: 1 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: null },
-      jsPDF: { unit: 'mm', format: pdfFormat, orientation: 'portrait' }
-    }).from(clone).save();
-  } finally {
-    tempWrapper.remove();
-  }
-}
-
-function openPrintFallback(cvElement) {
-  const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=900,height=1200');
-  if (!printWindow) throw new Error('Popup bloqueado.');
-
-  const isDarkMode = document.documentElement.classList.contains('dark');
-  const clone = cvElement.cloneNode(true);
-  clone.style.transform = 'none';
-
-  printWindow.document.write(`
-    <!doctype html>
-    <html class="${isDarkMode ? 'dark' : ''}">
-      <head>
-        <meta charset="utf-8" />
-        <title>Exportar PDF</title>
-        <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet" />
-        <link rel="stylesheet" href="style.css" />
-        <style>
-          body { margin: 0; padding: 16px; background: #fff; display:flex; justify-content:center; }
-          .cv-doc { box-shadow: none !important; max-width: none; width: fit-content; }
-        </style>
-      </head>
-      <body></body>
-    </html>
-  `);
-
-  printWindow.document.body.appendChild(clone);
-  printWindow.document.close();
-
-  printWindow.onload = () => {
-    printWindow.focus();
-    printWindow.print();
+  const ensureSpace = (needed = 10) => {
+    if (y + needed <= pageHeight - margin) return;
+    doc.addPage();
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, 0, pageWidth, pageHeight, 'F');
+    y = margin;
   };
+
+  const drawSectionTitle = (title) => {
+    ensureSpace(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(30, 30, 30);
+    doc.text(title.toUpperCase(), margin, y);
+    y += 2;
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.3);
+    doc.line(margin, y + 1.2, pageWidth - margin, y + 1.2);
+    y += sectionGap;
+  };
+
+  const drawParagraph = (text, options = {}) => {
+    if (!text) return;
+    const fontSize = options.fontSize || 10;
+    const style = options.style || 'normal';
+    const color = options.color || [50, 50, 50];
+    const gap = options.gap || lineGap;
+    doc.setFont('helvetica', style);
+    doc.setFontSize(fontSize);
+    doc.setTextColor(...color);
+    const lines = doc.splitTextToSize(text, contentWidth);
+    ensureSpace(lines.length * gap + 2);
+    doc.text(lines, margin, y);
+    y += lines.length * gap;
+  };
+
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+  const name = (resumeState.fullName || 'Seu Nome').trim();
+  const role = (resumeState.jobTitle || 'Cargo').trim();
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.setTextColor(20, 20, 20);
+  doc.text(name, pageWidth / 2, y, { align: 'center' });
+  y += 8;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.setTextColor(90, 90, 90);
+  doc.text(role, pageWidth / 2, y, { align: 'center' });
+  y += 7;
+
+  const contacts = [resumeState.email, resumeState.phone, resumeState.location, resumeState.linkedin]
+    .map((value) => (value || '').trim())
+    .filter(Boolean);
+  if (contacts.length) {
+    doc.setFontSize(9.5);
+    doc.text(contacts.join('  |  '), pageWidth / 2, y, { align: 'center' });
+    y += 6;
+  }
+
+  doc.setDrawColor(180, 180, 180);
+  doc.setLineWidth(0.35);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 8;
+
+  if (resumeState.summary?.trim()) {
+    drawSectionTitle('Resumo Profissional');
+    drawParagraph(resumeState.summary.trim(), { fontSize: 10, gap: 4.7 });
+    y += 2;
+  }
+
+  const experiences = resumeState.experience.filter((item) => item.company?.trim());
+  if (experiences.length) {
+    drawSectionTitle('Experiência Profissional');
+    experiences.forEach((item) => {
+      ensureSpace(16);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10.5);
+      doc.setTextColor(25, 25, 25);
+      doc.text(item.company.trim(), margin, y);
+
+      if (item.period?.trim()) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9.5);
+        doc.setTextColor(95, 95, 95);
+        doc.text(item.period.trim(), pageWidth - margin, y, { align: 'right' });
+      }
+      y += lineGap;
+
+      if (item.role?.trim()) {
+        drawParagraph(item.role.trim(), { fontSize: 9.8, style: 'italic', color: [70, 70, 70], gap: 4.5 });
+      }
+      if (item.desc?.trim()) {
+        drawParagraph(item.desc.trim(), { fontSize: 9.6, gap: 4.4, color: [55, 55, 55] });
+      }
+      y += itemGap;
+    });
+  }
+
+  const education = resumeState.education.filter((item) => item.institution?.trim());
+  if (education.length) {
+    drawSectionTitle('Formação Acadêmica');
+    education.forEach((item) => {
+      ensureSpace(14);
+      const end = item.current ? 'Cursando' : (item.end || '').trim();
+      const period = item.start?.trim() ? `${item.start.trim()}${end ? ` — ${end}` : ''}` : '';
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10.2);
+      doc.setTextColor(25, 25, 25);
+      doc.text(item.institution.trim(), margin, y);
+
+      if (period) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9.4);
+        doc.setTextColor(95, 95, 95);
+        doc.text(period, pageWidth - margin, y, { align: 'right' });
+      }
+      y += lineGap;
+
+      if (item.course?.trim()) {
+        drawParagraph(item.course.trim(), { fontSize: 9.6, color: [60, 60, 60], gap: 4.3 });
+      }
+      y += itemGap;
+    });
+  }
+
+  const skills = resumeState.skills.filter((item) => item.name?.trim());
+  if (skills.length) {
+    drawSectionTitle('Habilidades');
+    const text = skills.map((item) => item.name.trim()).join(' • ');
+    drawParagraph(text, { fontSize: 9.8, gap: 4.8 });
+    y += 1;
+  }
+
+  const tags = resumeState.tags.filter(Boolean);
+  if (tags.length) {
+    drawSectionTitle('Competências');
+    drawParagraph(tags.join(' • '), { fontSize: 9.8, gap: 4.8 });
+    y += 1;
+  }
+
+  const certs = resumeState.certs.filter((item) => item.name?.trim());
+  if (certs.length) {
+    drawSectionTitle('Certificados');
+    certs.forEach((item) => {
+      const line = `${item.name.trim()}${item.issuer?.trim() ? ` — ${item.issuer.trim()}` : ''}${item.year?.trim() ? ` (${item.year.trim()})` : ''}`;
+      drawParagraph(`• ${line}`, { fontSize: 9.5, gap: 4.5 });
+    });
+    y += 1;
+  }
+
+  const projects = resumeState.projects.filter((item) => item.name?.trim());
+  if (projects.length) {
+    drawSectionTitle('Projetos');
+    projects.forEach((item) => {
+      drawParagraph(item.name.trim(), { fontSize: 10, style: 'bold', color: [30, 30, 30], gap: 4.7 });
+      if (item.link?.trim()) drawParagraph(item.link.trim(), { fontSize: 9.2, color: [80, 80, 80], gap: 4.2 });
+      if (item.desc?.trim()) drawParagraph(item.desc.trim(), { fontSize: 9.4, color: [55, 55, 55], gap: 4.4 });
+      y += itemGap;
+    });
+  }
+
+  return doc;
 }
 
 function makePdfFileName(name) {
