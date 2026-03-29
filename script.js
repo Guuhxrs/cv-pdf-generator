@@ -48,6 +48,9 @@ let state = {
 let zoomLevel = 1;
 const API_BASE = '/api';
 const LEGACY_RESUMES_STORAGE_KEY = 'myResumes.v1';
+const LOCAL_AUTH_USERS_KEY = 'localAuth.users.v1';
+const LOCAL_AUTH_SESSION_KEY = 'localAuth.session.v1';
+const LOCAL_RESUMES_KEY = 'localAuth.resumes.v1';
 let authUser = null;
 let legacySynced = false;
 
@@ -519,17 +522,135 @@ function showToast(msg) {
 
 // ── API HELPERS ──
 async function apiRequest(path, options = {}) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-    credentials: 'include',
-    ...options
-  });
+  try {
+    const response = await fetch(`${API_BASE}${path}`, {
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      credentials: 'include',
+      ...options
+    });
 
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(payload.message || 'Erro ao processar requisição.');
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.message || 'Erro ao processar requisição.');
+    }
+    return payload;
+  } catch (error) {
+    if (error instanceof TypeError || String(error.message).includes('Failed to fetch')) {
+      return localApiRequest(path, options);
+    }
+    throw error;
   }
-  return payload;
+}
+
+async function localApiRequest(path, options = {}) {
+  const method = (options.method || 'GET').toUpperCase();
+  const body = options.body ? JSON.parse(options.body) : {};
+  const session = readStorage(LOCAL_AUTH_SESSION_KEY, null);
+
+  if (path === '/auth/register' && method === 'POST') {
+    const { name, email, password } = body;
+    if (!name || !email || !password || password.length < 6) {
+      throw new Error('Dados inválidos. Senha mínima: 6 caracteres.');
+    }
+
+    const users = readStorage(LOCAL_AUTH_USERS_KEY, []);
+    const normalizedEmail = String(email).trim().toLowerCase();
+    if (users.some((u) => u.email === normalizedEmail)) throw new Error('E-mail já cadastrado.');
+
+    users.push({
+      id: Date.now(),
+      name: String(name).trim(),
+      email: normalizedEmail,
+      password_hash: await hashPassword(password)
+    });
+    writeStorage(LOCAL_AUTH_USERS_KEY, users);
+    return { ok: true };
+  }
+
+  if (path === '/auth/login' && method === 'POST') {
+    const { email, password } = body;
+    const users = readStorage(LOCAL_AUTH_USERS_KEY, []);
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const user = users.find((u) => u.email === normalizedEmail);
+    if (!user) throw new Error('Credenciais inválidas.');
+
+    const hash = await hashPassword(password);
+    if (hash !== user.password_hash) throw new Error('Credenciais inválidas.');
+
+    const safeUser = { id: user.id, name: user.name, email: user.email };
+    writeStorage(LOCAL_AUTH_SESSION_KEY, safeUser);
+    return { user: safeUser };
+  }
+
+  if (path === '/auth/logout' && method === 'POST') {
+    writeStorage(LOCAL_AUTH_SESSION_KEY, null);
+    return { ok: true };
+  }
+
+  if (path === '/auth/me' && method === 'GET') {
+    if (!session) throw new Error('Não autenticado.');
+    return { user: session };
+  }
+
+  if (path === '/resumes' && method === 'GET') {
+    if (!session) throw new Error('Não autenticado.');
+    const resumes = readStorage(LOCAL_RESUMES_KEY, []);
+    const items = resumes
+      .filter((item) => item.user_id === session.id)
+      .sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)));
+    return { items };
+  }
+
+  if (path === '/resumes' && method === 'POST') {
+    if (!session) throw new Error('Não autenticado.');
+    const resumes = readStorage(LOCAL_RESUMES_KEY, []);
+    const now = new Date().toISOString();
+    resumes.push({
+      id: Date.now(),
+      user_id: session.id,
+      name: body.name,
+      state_snapshot: body.stateSnapshot,
+      created_at: now,
+      updated_at: now
+    });
+    writeStorage(LOCAL_RESUMES_KEY, resumes);
+    return { ok: true };
+  }
+
+  if (path.startsWith('/resumes/') && method === 'DELETE') {
+    if (!session) throw new Error('Não autenticado.');
+    const id = Number(path.split('/').pop());
+    const resumes = readStorage(LOCAL_RESUMES_KEY, []);
+    const filtered = resumes.filter((item) => !(item.id === id && item.user_id === session.id));
+    writeStorage(LOCAL_RESUMES_KEY, filtered);
+    return { ok: true };
+  }
+
+  throw new Error('Operação não suportada no modo local.');
+}
+
+function readStorage(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+
+  const modal = document.getElementById('my-resumes-modal');
+  if (!modal) return;
+  renderMyResumesList();
+  modal.classList.add('show');
+}
+
+function writeStorage(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+async function hashPassword(password) {
+  const data = new TextEncoder().encode(password);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 // ── MY RESUMES ──
