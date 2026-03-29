@@ -636,6 +636,11 @@ function readStorage(key, fallback) {
   } catch {
     return fallback;
   }
+
+  const modal = document.getElementById('my-resumes-modal');
+  if (!modal) return;
+  renderMyResumesList();
+  modal.classList.add('show');
 }
 
 function writeStorage(key, value) {
