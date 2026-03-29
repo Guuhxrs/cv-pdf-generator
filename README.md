@@ -69,11 +69,26 @@ Gerador de currículo em PDF feito com **HTML, CSS e JavaScript puro**, com foco
 
 ## ▶️ Como usar
 
-1. Abra `index.html` no navegador.
+### 1) Instalar dependências
+
+```bash
+npm install
+```
+
+### 2) Rodar o servidor (API + front-end)
+
+```bash
+npm start
+```
+
+Abra: `http://localhost:3000`
+
+### 3) Fluxo recomendado
+
+1. Clique no ícone de usuário no topo para **Cadastro/Login**.
 2. Preencha os dados do currículo.
-3. Selecione o modelo desejado.
-4. Clique em **Atualizar prévia** para revisar.
-5. Clique em **Gerar PDF** para baixar o arquivo diretamente.
+3. Clique em **My Resumes** para salvar e gerenciar versões na sua conta.
+4. Clique em **Generate PDF** para exportar.
 
 ---
 

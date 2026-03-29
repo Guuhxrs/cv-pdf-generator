@@ -14,7 +14,7 @@
   <span class="brand">The Digital Curator</span>
   <nav class="topnav-links">
     <a href="#" class="active" onclick="return false">Dashboard</a>
-    <a href="#" onclick="return false">My Resumes</a>
+    <a href="#" onclick="openMyResumes(); return false;">My Resumes</a>
     <a href="#" onclick="return false">Templates</a>
   </nav>
   <div class="topnav-actions">
@@ -49,7 +49,7 @@
         <path d="M8 1.5v1M8 13.5v1M1.5 8h1M13.5 8h1M3.5 3.5l.7.7M11.8 11.8l.7.7M3.5 12.5l.7-.7M11.8 4.2l.7-.7"/>
       </svg>
     </button>
-    <div class="avatar">A</div>
+    <button class="avatar" id="user-avatar" onclick="openAuthModal()">A</button>
   </div>
 </header>
 
@@ -247,6 +247,84 @@
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
+
+<!-- MY RESUMES MODAL -->
+<div class="modal-backdrop" id="my-resumes-modal" onclick="closeMyResumes(event)">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3>My Resumes</h3>
+      <button class="modal-close" onclick="closeMyResumes()">×</button>
+    </div>
+    <p class="modal-subtitle">Salve versões do currículo e recarregue quando quiser.</p>
+    <div id="my-resumes-list" class="my-resumes-list"></div>
+    <div class="modal-actions">
+      <button class="btn-clear" onclick="closeMyResumes()">Fechar</button>
+      <button class="btn-pdf" onclick="saveCurrentResume()">Salvar versão atual</button>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal-backdrop" id="auth-modal" onclick="closeAuthModal(event)">
+  <div class="modal-card auth-card" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3 id="auth-modal-title">Entrar</h3>
+      <button class="modal-close" onclick="closeAuthModal()">×</button>
+    </div>
+    <p class="modal-subtitle" id="auth-modal-subtitle">Acesse sua conta para salvar currículos no banco de dados.</p>
+
+    <div id="auth-tabs" class="auth-tabs">
+      <button class="auth-tab active" onclick="setAuthTab('login', this)">Login</button>
+      <button class="auth-tab" onclick="setAuthTab('register', this)">Cadastro</button>
+    </div>
+
+    <div id="auth-login-view">
+      <div class="form-grid" style="grid-template-columns:1fr">
+        <div class="form-group">
+          <label class="form-label">E-mail</label>
+          <input id="login-email" class="form-input" type="email" placeholder="voce@email.com" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Senha</label>
+          <input id="login-password" class="form-input" type="password" placeholder="********" />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-pdf" onclick="handleLogin()">Entrar</button>
+      </div>
+    </div>
+
+    <div id="auth-register-view" style="display:none">
+      <div class="form-grid" style="grid-template-columns:1fr">
+        <div class="form-group">
+          <label class="form-label">Nome</label>
+          <input id="register-name" class="form-input" type="text" placeholder="Seu nome" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">E-mail</label>
+          <input id="register-email" class="form-input" type="email" placeholder="voce@email.com" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Senha</label>
+          <input id="register-password" class="form-input" type="password" placeholder="mínimo 6 caracteres" />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-pdf" onclick="handleRegister()">Criar conta</button>
+      </div>
+    </div>
+
+    <div id="auth-account-view" style="display:none">
+      <div class="resume-empty" style="text-align:left">
+        <div><strong>Conectado como:</strong> <span id="account-name"></span></div>
+        <div style="margin-top:4px"><strong>E-mail:</strong> <span id="account-email"></span></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-clear" onclick="handleLogout()">Sair</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script src="script.js"></script>
 </body>
