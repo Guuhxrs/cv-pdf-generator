@@ -46,7 +46,10 @@ let state = {
 };
 
 let zoomLevel = 1;
-const RESUMES_STORAGE_KEY = 'myResumes.v1';
+const API_BASE = '/api';
+const LEGACY_RESUMES_STORAGE_KEY = 'myResumes.v1';
+let authUser = null;
+let legacySynced = false;
 
 // ── INIT ──
 function init() {
@@ -58,6 +61,7 @@ function init() {
   renderCerts();
   renderProjects();
   renderCV();
+  refreshAuthState();
 }
 
 function loadFromState() {
@@ -513,22 +517,35 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2200);
 }
 
-// ── MY RESUMES ──
-function getSavedResumes() {
-  try {
-    const raw = localStorage.getItem(RESUMES_STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
+// ── API HELPERS ──
+async function apiRequest(path, options = {}) {
+  const response = await fetch(`${API_BASE}${path}`, {
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    credentials: 'include',
+    ...options
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.message || 'Erro ao processar requisição.');
   }
+  return payload;
 }
 
-function setSavedResumes(resumes) {
-  localStorage.setItem(RESUMES_STORAGE_KEY, JSON.stringify(resumes));
+// ── MY RESUMES ──
+async function getSavedResumes() {
+  if (!authUser) return [];
+  const payload = await apiRequest('/resumes');
+  return payload.items || [];
 }
 
 function openMyResumes() {
+  if (!authUser) {
+    openAuthModal();
+    showToast('Faça login para usar My Resumes.');
+    return;
+  }
+
   const modal = document.getElementById('my-resumes-modal');
   if (!modal) return;
   renderMyResumesList();
@@ -542,31 +559,37 @@ function closeMyResumes(event) {
   modal.classList.remove('show');
 }
 
-function renderMyResumesList() {
+async function renderMyResumesList() {
   const list = document.getElementById('my-resumes-list');
   if (!list) return;
 
-  const resumes = getSavedResumes();
-  if (!resumes.length) {
-    list.innerHTML = '<div class="resume-empty">Nenhuma versão salva ainda.</div>';
-    return;
-  }
+  try {
+    list.innerHTML = '<div class="resume-empty">Carregando...</div>';
+    const resumes = await getSavedResumes();
+    if (!resumes.length) {
+      list.innerHTML = '<div class="resume-empty">Nenhuma versão salva ainda.</div>';
+      return;
+    }
 
-  list.innerHTML = resumes.map((item, index) => `
-    <div class="resume-item">
-      <div class="resume-item-main">
-        <div class="resume-item-name">${escapeHtml(item.name || `Versão ${index + 1}`)}</div>
-        <div class="resume-item-date">${new Date(item.savedAt).toLocaleString('pt-BR')}</div>
+    list.innerHTML = resumes.map((item, index) => `
+      <div class="resume-item">
+        <div class="resume-item-main">
+          <div class="resume-item-name">${escapeHtml(item.name || `Versão ${index + 1}`)}</div>
+          <div class="resume-item-date">${new Date(item.updated_at || item.created_at).toLocaleString('pt-BR')}</div>
+        </div>
+        <div class="resume-item-actions">
+          <button class="btn-clear" onclick="loadSavedResume(${item.id})">Carregar</button>
+          <button class="btn-clear" onclick="deleteSavedResume(${item.id})">Excluir</button>
+        </div>
       </div>
-      <div class="resume-item-actions">
-        <button class="btn-clear" onclick="loadSavedResume(${index})">Carregar</button>
-        <button class="btn-clear" onclick="deleteSavedResume(${index})">Excluir</button>
-      </div>
-    </div>
-  `).join('');
+    `).join('');
+  } catch (error) {
+    list.innerHTML = `<div class="resume-empty">${escapeHtml(error.message)}</div>`;
+  }
 }
 
-function saveCurrentResume() {
+async function saveCurrentResume() {
+  if (!authUser) return;
   const currentName = (state.fullName || 'Currículo').trim();
   const name = prompt('Nome para esta versão:', `${currentName} - ${new Date().toLocaleDateString('pt-BR')}`);
   if (name === null) return;
@@ -577,45 +600,51 @@ function saveCurrentResume() {
     return;
   }
 
-  const resumes = getSavedResumes();
-  resumes.unshift({
-    name: trimmed,
-    savedAt: new Date().toISOString(),
-    stateSnapshot: JSON.parse(JSON.stringify(state))
-  });
-
-  setSavedResumes(resumes.slice(0, 30));
-  renderMyResumesList();
-  showToast('Versão salva com sucesso.');
-}
-
-function loadSavedResume(index) {
-  const resumes = getSavedResumes();
-  const selected = resumes[index];
-  if (!selected?.stateSnapshot) {
-    showToast('Versão inválida.');
-    return;
+  try {
+    await apiRequest('/resumes', {
+      method: 'POST',
+      body: JSON.stringify({ name: trimmed, stateSnapshot: state })
+    });
+    await renderMyResumesList();
+    showToast('Versão salva com sucesso.');
+  } catch (error) {
+    showToast(error.message);
   }
-
-  state = selected.stateSnapshot;
-  loadFromState();
-  renderTags();
-  renderExperience();
-  renderEducation();
-  renderSkills();
-  renderCerts();
-  renderProjects();
-  renderCV();
-  closeMyResumes();
-  showToast('Currículo carregado.');
 }
 
-function deleteSavedResume(index) {
-  const resumes = getSavedResumes();
-  resumes.splice(index, 1);
-  setSavedResumes(resumes);
-  renderMyResumesList();
-  showToast('Versão removida.');
+async function loadSavedResume(resumeId) {
+  try {
+    const resumes = await getSavedResumes();
+    const selected = resumes.find((item) => item.id === resumeId);
+    if (!selected?.state_snapshot) {
+      showToast('Versão inválida.');
+      return;
+    }
+
+    state = selected.state_snapshot;
+    loadFromState();
+    renderTags();
+    renderExperience();
+    renderEducation();
+    renderSkills();
+    renderCerts();
+    renderProjects();
+    renderCV();
+    closeMyResumes();
+    showToast('Currículo carregado.');
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function deleteSavedResume(resumeId) {
+  try {
+    await apiRequest(`/resumes/${resumeId}`, { method: 'DELETE' });
+    await renderMyResumesList();
+    showToast('Versão removida.');
+  } catch (error) {
+    showToast(error.message);
+  }
 }
 
 function escapeHtml(value) {
@@ -625,6 +654,141 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+// ── AUTH ──
+function setAuthTab(tabName, el) {
+  document.querySelectorAll('.auth-tab').forEach((tab) => tab.classList.remove('active'));
+  el.classList.add('active');
+
+  document.getElementById('auth-login-view').style.display = tabName === 'login' ? 'block' : 'none';
+  document.getElementById('auth-register-view').style.display = tabName === 'register' ? 'block' : 'none';
+}
+
+function openAuthModal() {
+  const modal = document.getElementById('auth-modal');
+  if (!modal) return;
+
+  document.getElementById('auth-account-view').style.display = authUser ? 'block' : 'none';
+  document.getElementById('auth-tabs').style.display = authUser ? 'none' : 'flex';
+  document.getElementById('auth-login-view').style.display = authUser ? 'none' : 'block';
+  document.getElementById('auth-register-view').style.display = 'none';
+  modal.classList.add('show');
+
+  if (authUser) {
+    document.getElementById('auth-modal-title').textContent = 'Minha conta';
+    document.getElementById('auth-modal-subtitle').textContent = 'Gerencie sua sessão.';
+    document.getElementById('account-name').textContent = authUser.name || '';
+    document.getElementById('account-email').textContent = authUser.email || '';
+  } else {
+    document.getElementById('auth-modal-title').textContent = 'Entrar';
+    document.getElementById('auth-modal-subtitle').textContent = 'Acesse sua conta para salvar currículos no banco de dados.';
+  }
+}
+
+function closeAuthModal(event) {
+  if (event && event.type === 'click' && event.target?.id !== 'auth-modal') return;
+  const modal = document.getElementById('auth-modal');
+  if (!modal) return;
+  modal.classList.remove('show');
+}
+
+async function handleRegister() {
+  const name = document.getElementById('register-name').value.trim();
+  const email = document.getElementById('register-email').value.trim();
+  const password = document.getElementById('register-password').value;
+
+  if (!name || !email || !password) {
+    showToast('Preencha todos os campos do cadastro.');
+    return;
+  }
+
+  try {
+    await apiRequest('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ name, email, password })
+    });
+    showToast('Conta criada. Faça login.');
+    setAuthTab('login', document.querySelectorAll('.auth-tab')[0]);
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function handleLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) {
+    showToast('Informe e-mail e senha.');
+    return;
+  }
+
+  try {
+    const payload = await apiRequest('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    });
+    authUser = payload.user;
+    updateAvatar();
+    closeAuthModal();
+    showToast('Login realizado com sucesso.');
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function handleLogout() {
+  try {
+    await apiRequest('/auth/logout', { method: 'POST', body: JSON.stringify({}) });
+    authUser = null;
+    updateAvatar();
+    closeAuthModal();
+    showToast('Sessão encerrada.');
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function refreshAuthState() {
+  try {
+    const payload = await apiRequest('/auth/me');
+    authUser = payload.user || null;
+    if (authUser && !legacySynced) {
+      await migrateLegacyResumes();
+      legacySynced = true;
+    }
+  } catch {
+    authUser = null;
+  }
+  updateAvatar();
+}
+
+function updateAvatar() {
+  const avatar = document.getElementById('user-avatar');
+  if (!avatar) return;
+  const base = authUser?.name || authUser?.email || 'A';
+  avatar.textContent = base.charAt(0).toUpperCase();
+  avatar.title = authUser ? `Conectado: ${authUser.name}` : 'Entrar / Cadastrar';
+}
+
+async function migrateLegacyResumes() {
+  try {
+    const raw = localStorage.getItem(LEGACY_RESUMES_STORAGE_KEY);
+    const legacy = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(legacy) || !legacy.length) return;
+
+    for (const item of legacy) {
+      if (!item?.name || !item?.stateSnapshot) continue;
+      await apiRequest('/resumes', {
+        method: 'POST',
+        body: JSON.stringify({ name: item.name, stateSnapshot: item.stateSnapshot })
+      });
+    }
+    localStorage.removeItem(LEGACY_RESUMES_STORAGE_KEY);
+    showToast('Templates antigos importados para sua conta.');
+  } catch (error) {
+    console.warn('Falha ao migrar templates locais:', error);
+  }
 }
 
 // ── THEME ──

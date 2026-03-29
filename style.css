@@ -190,6 +190,7 @@ html.dark .btn-pdf:hover { background: #F5F0E8; }
   height: 32px;
   border-radius: 50%;
   background: #D4C9B8;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -197,6 +198,7 @@ html.dark .btn-pdf:hover { background: #F5F0E8; }
   font-weight: 600;
   color: #6B5F50;
   cursor: pointer;
+  font-family: inherit;
 }
 
 /* ── THEME TOGGLE ── */
@@ -949,6 +951,34 @@ html.dark .cv-tag         { background: #2A2723; color: #9A9590; }
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.auth-card {
+  max-width: 480px;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.auth-tab {
+  flex: 1;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text-muted);
+  font-size: 13px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.auth-tab.active {
+  color: var(--text);
+  border-color: var(--text);
+  background: var(--surface);
+  font-weight: 600;
 }
 
 /* ── SCROLLBAR ── */
