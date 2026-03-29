@@ -14,7 +14,7 @@
   <span class="brand">The Digital Curator</span>
   <nav class="topnav-links">
     <a href="#" class="active" onclick="return false">Dashboard</a>
-    <a href="#" onclick="return false">My Resumes</a>
+    <a href="#" onclick="openMyResumes(); return false;">My Resumes</a>
     <a href="#" onclick="return false">Templates</a>
   </nav>
   <div class="topnav-actions">
@@ -247,6 +247,22 @@
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
+
+<!-- MY RESUMES MODAL -->
+<div class="modal-backdrop" id="my-resumes-modal" onclick="closeMyResumes(event)">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3>My Resumes</h3>
+      <button class="modal-close" onclick="closeMyResumes()">×</button>
+    </div>
+    <p class="modal-subtitle">Salve versões do currículo e recarregue quando quiser.</p>
+    <div id="my-resumes-list" class="my-resumes-list"></div>
+    <div class="modal-actions">
+      <button class="btn-clear" onclick="closeMyResumes()">Fechar</button>
+      <button class="btn-pdf" onclick="saveCurrentResume()">Salvar versão atual</button>
+    </div>
+  </div>
+</div>
 
 <script src="script.js"></script>
 </body>

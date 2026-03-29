@@ -46,6 +46,7 @@ let state = {
 };
 
 let zoomLevel = 1;
+const RESUMES_STORAGE_KEY = 'myResumes.v1';
 
 // ── INIT ──
 function init() {
@@ -510,6 +511,120 @@ function showToast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── MY RESUMES ──
+function getSavedResumes() {
+  try {
+    const raw = localStorage.getItem(RESUMES_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function setSavedResumes(resumes) {
+  localStorage.setItem(RESUMES_STORAGE_KEY, JSON.stringify(resumes));
+}
+
+function openMyResumes() {
+  const modal = document.getElementById('my-resumes-modal');
+  if (!modal) return;
+  renderMyResumesList();
+  modal.classList.add('show');
+}
+
+function closeMyResumes(event) {
+  if (event && event.type === 'click' && event.target?.id !== 'my-resumes-modal') return;
+  const modal = document.getElementById('my-resumes-modal');
+  if (!modal) return;
+  modal.classList.remove('show');
+}
+
+function renderMyResumesList() {
+  const list = document.getElementById('my-resumes-list');
+  if (!list) return;
+
+  const resumes = getSavedResumes();
+  if (!resumes.length) {
+    list.innerHTML = '<div class="resume-empty">Nenhuma versão salva ainda.</div>';
+    return;
+  }
+
+  list.innerHTML = resumes.map((item, index) => `
+    <div class="resume-item">
+      <div class="resume-item-main">
+        <div class="resume-item-name">${escapeHtml(item.name || `Versão ${index + 1}`)}</div>
+        <div class="resume-item-date">${new Date(item.savedAt).toLocaleString('pt-BR')}</div>
+      </div>
+      <div class="resume-item-actions">
+        <button class="btn-clear" onclick="loadSavedResume(${index})">Carregar</button>
+        <button class="btn-clear" onclick="deleteSavedResume(${index})">Excluir</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function saveCurrentResume() {
+  const currentName = (state.fullName || 'Currículo').trim();
+  const name = prompt('Nome para esta versão:', `${currentName} - ${new Date().toLocaleDateString('pt-BR')}`);
+  if (name === null) return;
+
+  const trimmed = name.trim();
+  if (!trimmed) {
+    showToast('Informe um nome para salvar.');
+    return;
+  }
+
+  const resumes = getSavedResumes();
+  resumes.unshift({
+    name: trimmed,
+    savedAt: new Date().toISOString(),
+    stateSnapshot: JSON.parse(JSON.stringify(state))
+  });
+
+  setSavedResumes(resumes.slice(0, 30));
+  renderMyResumesList();
+  showToast('Versão salva com sucesso.');
+}
+
+function loadSavedResume(index) {
+  const resumes = getSavedResumes();
+  const selected = resumes[index];
+  if (!selected?.stateSnapshot) {
+    showToast('Versão inválida.');
+    return;
+  }
+
+  state = selected.stateSnapshot;
+  loadFromState();
+  renderTags();
+  renderExperience();
+  renderEducation();
+  renderSkills();
+  renderCerts();
+  renderProjects();
+  renderCV();
+  closeMyResumes();
+  showToast('Currículo carregado.');
+}
+
+function deleteSavedResume(index) {
+  const resumes = getSavedResumes();
+  resumes.splice(index, 1);
+  setSavedResumes(resumes);
+  renderMyResumesList();
+  showToast('Versão removida.');
+}
+
+function escapeHtml(value) {
+  return (value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // ── THEME ──
