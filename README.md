@@ -83,6 +83,17 @@ npm start
 
 Abra: `http://localhost:3000`
 
+### Modo local (sem servidor / fora do GitHub)
+
+Também funciona abrindo o `index.html` diretamente no navegador:
+
+```bash
+open index.html
+```
+
+Nesse modo, autenticação e "My Resumes" usam `localStorage` automaticamente (sem API externa).
+Para geração de PDF, o app tenta carregar primeiro `./vendor/jspdf.umd.min.js` e depois CDN.
+
 ### 3) Fluxo recomendado
 
 1. Clique no ícone de usuário no topo para **Cadastro/Login**.

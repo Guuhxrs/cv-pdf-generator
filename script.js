@@ -53,6 +53,7 @@ const LOCAL_AUTH_SESSION_KEY = 'localAuth.session.v1';
 const LOCAL_RESUMES_KEY = 'localAuth.resumes.v1';
 let authUser = null;
 let legacySynced = false;
+const FORCE_LOCAL_MODE = window.location.protocol === 'file:';
 
 // ── INIT ──
 function init() {
@@ -522,6 +523,10 @@ function showToast(msg) {
 
 // ── API HELPERS ──
 async function apiRequest(path, options = {}) {
+  if (FORCE_LOCAL_MODE) {
+    return localApiRequest(path, options);
+  }
+
   try {
     const response = await fetch(`${API_BASE}${path}`, {
       headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
@@ -648,9 +653,22 @@ function writeStorage(key, value) {
 }
 
 async function hashPassword(password) {
+  if (!window.crypto?.subtle) {
+    return simpleHash(password);
+  }
+
   const data = new TextEncoder().encode(password);
   const digest = await crypto.subtle.digest('SHA-256', data);
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function simpleHash(value) {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
 }
 
 // ── MY RESUMES ──
@@ -933,11 +951,25 @@ function loadJsPdfLibrary() {
   if (window.__jspdfLoadingPromise) return window.__jspdfLoadingPromise;
 
   window.__jspdfLoadingPromise = new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-    script.onload = () => resolve(window.jspdf.jsPDF);
-    script.onerror = reject;
-    document.head.appendChild(script);
+    const scriptSources = [
+      './vendor/jspdf.umd.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
+    ];
+
+    const loadSource = (index) => {
+      if (index >= scriptSources.length) {
+        reject(new Error('Não foi possível carregar a biblioteca de PDF.'));
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = scriptSources[index];
+      script.onload = () => resolve(window.jspdf.jsPDF);
+      script.onerror = () => loadSource(index + 1);
+      document.head.appendChild(script);
+    };
+
+    loadSource(0);
   });
 
   return window.__jspdfLoadingPromise;
